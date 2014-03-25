@@ -344,14 +344,49 @@ exports.testFindFilters = {
   }
 };
 
+exports.testFindById = function (test) {
+  var itemId;
+  Item.findOne({field1: 'value1'}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    logger.trace('item :', item);
+    itemId = item.id;
+    logger.trace('itemId :', itemId);
+    Item.findById(itemId, function (err, item) {
+      test.ifError(err);
+      test.ok(item);
+      //test.equal(item.field1, 'value1Modified');
+    });
+  });
+};
+
+exports.testFindByIdAndUpdate = function (test) {
+  var itemId;
+  Item.findOne({field1: 'value1'}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    logger.trace('item :', item);
+    itemId = item.id;
+    logger.trace('itemId :', itemId);
+    Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function (err, item) {
+      test.ifError(err);
+      test.ok(item);
+      //test.equal(item.field1, 'value1Modified');
+    });
+  });
+};
+
 // disabled tests :
 delete exports.testFindAll;
 delete exports.testInsert;
 delete exports.testRemove;
 delete exports.testCrud;
+delete exports.testFindFilters;
+delete exports.testFindUnknown;
+delete testFindByIdAndUpdate;
 
 /*
- delete exports.testFindFilters;
+ delete testFindById;
  */
 
 module.exports = exports;

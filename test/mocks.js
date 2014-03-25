@@ -1,9 +1,11 @@
-var mocks;
+var mongoose = require('mongoose')
+  , mocks;
 
 mocks = {
   fakedb: {
     items: [
       {
+        _id: new mongoose.Types.ObjectId,
         field1: 'value1',
         field2: {
           field3: 31,
@@ -12,6 +14,7 @@ mocks = {
         field5: ['a', 'b', 'c']
       },
       {
+        _id: new mongoose.Types.ObjectId,
         field1: 'value11',
         field2: {
           field3: 32,
@@ -20,6 +23,7 @@ mocks = {
         field5: ['a', 'b', 'd']
       },
       {
+        _id: new mongoose.Types.ObjectId,
         field1: 'value21',
         field2: {
           field3: 33,
