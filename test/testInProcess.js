@@ -42,8 +42,9 @@ dbOptions = {
 };
 
 mongoose.model('Item', new mongoose.Schema({key: String}));
+mongoose.model('ArrayItem', new mongoose.Schema({key: [String]}));
 
-var Item;
+var Item, ArrayItem;
 
 module.exports.setUp = function (callback) {
   var profess;
@@ -64,10 +65,12 @@ module.exports.setUp = function (callback) {
     }).
     then(function () {
       logger.trace('connect to db');
+      mongoose.set('debug', true);
       mongoose.connect(dbConfig.url, dbOptions, profess.next);
     }).
     then(function () {
       Item = mongoose.connection.model('Item');
+      ArrayItem = mongoose.connection.model('ArrayItem');
       profess.next();
     }).
     then(callback);
@@ -129,6 +132,59 @@ exports.testUpdate = function (test) {
       test.ifError(err);
       test.equal(config.mocks.fakedb.items.length, 2);
       test.equal(config.mocks.fakedb.items[0].key, 'new value');
+      test.done();
+    });
+  });
+};
+
+exports.testUpdateArrayPush = function (test) {
+  logger.trace('testUpdateArrayPush');
+  var id = new mongoose.Types.ObjectId;
+  config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1']}];
+  ArrayItem.findOne({_id: id}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    item.key.push('value2');
+    item.save(function(err) {
+      test.ifError(err);
+      test.equal(config.mocks.fakedb.arrayitems.length, 1);
+      test.deepEqual(config.mocks.fakedb.arrayitems[0].key, ['value1', 'value2']);
+      test.done();
+    });
+  });
+};
+
+exports.testUpdateArrayShift = function (test) {
+  logger.trace('testUpdateArrayShift');
+  var id = new mongoose.Types.ObjectId;
+  config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
+  ArrayItem.findOne({_id: id}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    item.key.shift();
+    item.save(function(err) {
+      test.ifError(err);
+      test.equal(config.mocks.fakedb.arrayitems.length, 1);
+      test.deepEqual(
+        config.mocks.fakedb.arrayitems[0].key, ['value2']);
+      test.done();
+    });
+  });
+};
+
+exports.testUpdateArraySetArray = function (test) {
+  logger.trace('testUpdate');
+  var id = new mongoose.Types.ObjectId;
+  config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
+  ArrayItem.findOne({_id: id}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    item.key = ['one', 'two'];
+    item.save(function(err) {
+      test.ifError(err);
+      test.equal(config.mocks.fakedb.arrayitems.length, 1);
+      test.deepEqual(
+        config.mocks.fakedb.arrayitems[0].key, ['one', 'two']);
       test.done();
     });
   });
