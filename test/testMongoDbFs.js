@@ -104,6 +104,177 @@ exports.testFindUnknown = function (test) {
   });
 };
 
+exports.testFindFilters = {
+  'test $all': function (test) {
+    Item.find({ 'field5': { $all: ['a', 'c'] } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 1);
+      if (items.length === 3) {
+        test.equal(items[0].field5.indexOf('a'), 0);
+        test.equal(items[0].field5.indexOf('b'), 1);
+        test.equal(items[0].field5.indexOf('c'), 2);
+      }
+      test.done();
+    });
+  },
+  'test $gt': function (test) {
+    Item.find({ 'field2.field3': { $gt: 32 } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 1);
+      if (items.length === 1) {
+        test.equal(items[0].field2.field3, 33);
+      }
+      test.done();
+    });
+  },
+  'test $gte': function (test) {
+    Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 2);
+      test.done();
+    });
+  },
+  'test $in': function (test) {
+    Item.find({ 'field2.field3': { $in: [32, 33] } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 2);
+      if (items.length === 2) {
+        test.equal(items[0].field2.field3, 32);
+        test.equal(items[1].field2.field3, 33);
+      }
+      test.done();
+    });
+  },
+  'test $lt': function (test) {
+    Item.find({ 'field2.field3': { $lt: 32 } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 1);
+      if (items.length === 1) {
+        test.equal(items[0].field2.field3, 31);
+      }
+      test.done();
+    });
+  },
+  'test $lte': function (test) {
+    Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 2);
+      test.done();
+    });
+  },
+  'test $ne': function (test) {
+    Item.find({ 'field2.field3': { $ne: 32 } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 2);
+      if (items.length === 2) {
+        test.equal(items[0].field2.field3, 31);
+        test.equal(items[1].field2.field3, 33);
+      }
+      test.done();
+    });
+  },
+  'test $nin': function (test) {
+    Item.find({ 'field2.field3': { $nin: [32, 33] } }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 1);
+      if (items.length === 1) {
+        test.equal(items[0].field2.field3, 31);
+      }
+      test.done();
+    });
+  },
+   'test $or': function (test) {
+    Item.find({ $or: [
+      { field1: 'value1' },
+      { 'field2.field3': 32 }
+    ]}, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 2);
+      if (items.length === 2) {
+        test.equal(items[0].field1, 'value1');
+        test.equal(items[0].field2.field3, 32);
+      }
+      test.done();
+    });
+  },
+  'test simple filter': function (test) {
+    Item.find({ 'field2.field3': 32 }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 1);
+      if (items.length) {
+        test.equal(items[0].field2.field3, 32);
+      }
+      test.done();
+    });
+  },
+  'test 2 fields filter': function (test) {
+    Item.find({ field1: 'value1', 'field2.field3': 31 }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 1);
+      if (items.length) {
+        test.equal(items[0].field1, 'value1');
+        test.equal(items[0].field2.field3, 31);
+      }
+      test.done();
+    });
+  },
+  'test string filter': function (test) {
+    Item.find({ 'field2.field4': 'value24' }, function (err, items) {
+      test.ifError(err);
+      test.ok(items);
+      test.equal(items.length, 1);
+      if (items.length) {
+        test.equal(items[0].field2.field4, 'value24');
+      }
+      test.done();
+    });
+  }
+};
+
+exports.testFindById = function (test) {
+  logger.trace('testFindById');
+  var itemId;
+  Item.findOne({field1: 'value1'}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    logger.trace('item :', item);
+    itemId = item.id;
+    logger.trace('itemId :', itemId);
+    Item.findById(itemId, function (err, item) {
+      test.ifError(err);
+      test.ok(item);
+      test.done();
+    });
+  });
+};
+
+exports.testFindByIdAndUpdate = function (test) {
+  var itemId;
+  Item.findOne({field1: 'value1'}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    logger.trace('item :', item);
+    itemId = item.id;
+    logger.trace('itemId :', itemId);
+    Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function (err, item) {
+      test.ifError(err);
+      test.ok(item);
+      //test.equal(item.field1, 'value1Modified');
+    });
+  });
+};
+
 exports.testRemove = function (test) {
   logger.trace('testRemove');
   Item.findOne({ 'field1': 'value11' }, function (err, item) {
@@ -202,191 +373,16 @@ exports.testInsert = function (test) {
   item.save(function (err, savedItem) {
     test.ifError(err);
     test.ok(savedItem);
-    test.done();
-  });
-};
-
-exports.testFindFilters = {
-  'test $all': function (test) {
-    Item.find({ 'field5': { $all: ['a', 'c'] } }, function (err, items) {
+    item.remove(function(err) {
       test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 3) {
-        test.equal(items[0].field5.indexOf('a'), 0);
-        test.equal(items[0].field5.indexOf('b'), 1);
-        test.equal(items[0].field5.indexOf('c'), 2);
-      }
       test.done();
-    });
-  },
-  'test $gt': function (test) {
-    Item.find({ 'field2.field3': { $gt: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 1) {
-        test.equal(items[0].field2.field3, 33);
-      }
-      test.done();
-    });
-  },
-  'test $gte': function (test) {
-    Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      test.done();
-    });
-  },
-  'test $in': function (test) {
-    Item.find({ 'field2.field3': { $in: [32, 33] } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      if (items.length === 2) {
-        test.equal(items[0].field2.field3, 32);
-        test.equal(items[1].field2.field3, 33);
-      }
-      test.done();
-    });
-  },
-  'test $lt': function (test) {
-    Item.find({ 'field2.field3': { $lt: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 1) {
-        test.equal(items[0].field2.field3, 31);
-      }
-      test.done();
-    });
-  },
-  'test $lte': function (test) {
-    Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      test.done();
-    });
-  },
-  'test $ne': function (test) {
-    Item.find({ 'field2.field3': { $ne: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      if (items.length === 2) {
-        test.equal(items[0].field2.field3, 31);
-        test.equal(items[1].field2.field3, 33);
-      }
-      test.done();
-    });
-  },
-  'test $nin': function (test) {
-    Item.find({ 'field2.field3': { $nin: [32, 33] } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 1) {
-        test.equal(items[0].field2.field3, 31);
-      }
-      test.done();
-    });
-  }/*,
-   'test $or': function (test) {
-   Item.find({ $or: [
-   { field1: 'value1' },
-   { 'field2.field3': 32 }
-   ]}, function (err, items) {
-   test.ifError(err);
-   test.ok(items);
-   test.equal(items.length, 2);
-   if (items.length === 2) {
-   test.equal(items[0].field1, 'value1');
-   test.equal(items[0].field2.field3, 32);
-   }
-   test.done();
-   });
-   }*/,
-  'test simple filter': function (test) {
-    Item.find({ 'field2.field3': 32 }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length) {
-        test.equal(items[0].field2.field3, 32);
-      }
-      test.done();
-    });
-  },
-  'test 2 fields filter': function (test) {
-    Item.find({ field1: 'value1', 'field2.field3': 31 }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length) {
-        test.equal(items[0].field1, 'value1');
-        test.equal(items[0].field2.field3, 31);
-      }
-      test.done();
-    });
-  },
-  'test string filter': function (test) {
-    Item.find({ 'field2.field4': 'value24' }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length) {
-        test.equal(items[0].field2.field4, 'value24');
-      }
-      test.done();
-    });
-  }
-};
-
-exports.testFindById = function (test) {
-  var itemId;
-  Item.findOne({field1: 'value1'}, function (err, item) {
-    test.ifError(err);
-    test.ok(item);
-    logger.trace('item :', item);
-    itemId = item.id;
-    logger.trace('itemId :', itemId);
-    Item.findById(itemId, function (err, item) {
-      test.ifError(err);
-      test.ok(item);
-      //test.equal(item.field1, 'value1Modified');
-    });
-  });
-};
-
-exports.testFindByIdAndUpdate = function (test) {
-  var itemId;
-  Item.findOne({field1: 'value1'}, function (err, item) {
-    test.ifError(err);
-    test.ok(item);
-    logger.trace('item :', item);
-    itemId = item.id;
-    logger.trace('itemId :', itemId);
-    Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function (err, item) {
-      test.ifError(err);
-      test.ok(item);
-      //test.equal(item.field1, 'value1Modified');
     });
   });
 };
 
 // disabled tests :
-delete exports.testFindAll;
-delete exports.testInsert;
-delete exports.testRemove;
-delete exports.testCrud;
-delete exports.testFindFilters;
-delete exports.testFindUnknown;
-delete testFindByIdAndUpdate;
-
-/*
- delete testFindById;
- */
+// With current Mongoose (3.8.15), findByIdAndUpdate requires implementing the
+// findandmodify command.
+delete exports.testFindByIdAndUpdate;
 
 module.exports = exports;
