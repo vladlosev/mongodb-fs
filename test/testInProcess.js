@@ -47,38 +47,29 @@ mongoose.model('ArrayItem', new mongoose.Schema({key: [String]}));
 var Item, ArrayItem;
 
 module.exports.setUp = function (callback) {
-  var profess;
-  profess = new Profess();
-  profess.
-    do(function () {
-      //return profess.next();
-      if (!mongodbFs.isRunning()) {
-        mongodbFs.init(config);
-        logger.trace('init');
-        mongodbFs.start(profess.next);
-        nodeunit.on('complete', function () {
-          mongodbFs.stop();
-        });
-      } else {
-        profess.next();
+  mongodbFs.init(config);
+  logger.trace('init');
+  mongodbFs.start(function(err) {
+    if (err) return callback(err);
+    logger.trace('connect to db');
+    // mongoose.set('debug', true);
+    mongoose.connect(dbConfig.url, dbOptions, function(err) {
+      if (err) {
+        mongodbFs.stop();
+        return callback(err);
       }
-    }).
-    then(function () {
-      logger.trace('connect to db');
-      // mongoose.set('debug', true);
-      mongoose.connect(dbConfig.url, dbOptions, profess.next);
-    }).
-    then(function () {
       Item = mongoose.connection.model('Item');
       ArrayItem = mongoose.connection.model('ArrayItem');
-      profess.next();
-    }).
-    then(callback);
+      callback();
+    });
+  });
 };
 
 module.exports.tearDown = function (callback) {
   logger.trace('disconnect');
-  mongoose.disconnect(callback);
+  mongoose.disconnect(function() {
+    mongodbFs.stop(callback);
+  });
 };
 
 module.exports.testFindTwice = function (test) {
@@ -173,7 +164,7 @@ exports.testUpdateArrayShift = function (test) {
 };
 
 exports.testUpdateArraySetArray = function (test) {
-  logger.trace('testUpdate');
+  logger.trace('testUpdateArraySetArray');
   var id = new mongoose.Types.ObjectId;
   config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
   ArrayItem.findOne({_id: id}, function (err, item) {
@@ -187,5 +178,16 @@ exports.testUpdateArraySetArray = function (test) {
         config.mocks.fakedb.arrayitems[0].key, ['one', 'two']);
       test.done();
     });
+  });
+};
+
+exports.testDeleteByQuery = function (test) {
+  logger.trace('testDeleteByQuery');
+  config.mocks.fakedb.items = [{key: 'value1'}, {key: 'value2'}];
+  Item.remove({key: {$ne: 'value1'}}, function(err) {
+    test.ifError(err);
+    test.equal(config.mocks.fakedb.items.length, 1);
+    test.deepEqual(config.mocks.fakedb.items[0], {key: 'value1'});
+    test.done();
   });
 };
