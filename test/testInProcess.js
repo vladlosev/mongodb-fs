@@ -25,7 +25,7 @@ config = {
       ]
     },
     category: path.basename(__filename),
-    level: 'TRACE'
+    level: 'WARN'  // 'TRACE'
   }
 };
 
@@ -65,7 +65,7 @@ module.exports.setUp = function (callback) {
     }).
     then(function () {
       logger.trace('connect to db');
-      mongoose.set('debug', true);
+      // mongoose.set('debug', true);
       mongoose.connect(dbConfig.url, dbOptions, profess.next);
     }).
     then(function () {
