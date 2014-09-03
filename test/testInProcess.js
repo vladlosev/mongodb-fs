@@ -43,6 +43,8 @@ dbOptions = {
 
 mongoose.model('Item', new mongoose.Schema({key: String}));
 mongoose.model('ArrayItem', new mongoose.Schema({key: [String]}));
+mongoose.model('DateItem', new mongoose.Schema({date: Date}));
+mongoose.model('DateArrayItem', new mongoose.Schema({date: [Date]}));
 
 var Item, ArrayItem;
 
@@ -185,6 +187,50 @@ exports.testUpdateArraySetArray = function (test) {
       test.equal(config.mocks.fakedb.arrayitems.length, 1);
       test.deepEqual(
         config.mocks.fakedb.arrayitems[0].key, ['one', 'two']);
+      test.done();
+    });
+  });
+};
+
+exports.testUpdateDateField = function (test) {
+  logger.trace('testUpdateDateField');
+  var id = new mongoose.Types.ObjectId;
+  var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+  var now = new Date();
+  config.mocks.fakedb.dateitems = [
+    {_id: id, date: tenSecondsAgo}];
+  var DateItem = mongoose.connection.model('DateItem');
+  DateItem.findOne({_id: id}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    item.date = now;
+    item.save(function(err) {
+      test.ifError(err);
+      test.equal(config.mocks.fakedb.dateitems.length, 1);
+      test.equal(
+        config.mocks.fakedb.dateitems[0].date.toString(), now.toString());
+      test.done();
+    });
+  });
+};
+
+exports.testUpdateDateArrayField = function (test) {
+  logger.trace('testUpdateDateArrayField');
+  var id = new mongoose.Types.ObjectId;
+  var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+  var now = new Date();
+  config.mocks.fakedb.datearrayitems = [
+    {_id: id, date: tenSecondsAgo}];
+  var DateArrayItem = mongoose.connection.model('DateArrayItem');
+  DateArrayItem.findOne({_id: id}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    item.date = [now];
+    item.save(function(err) {
+      test.ifError(err);
+      test.equal(config.mocks.fakedb.datearrayitems.length, 1);
+      test.equal(
+        config.mocks.fakedb.datearrayitems[0].date[0].toString(), now.toString());
       test.done();
     });
   });
