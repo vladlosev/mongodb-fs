@@ -284,6 +284,19 @@ module.exports.testUpdatePullFromNonArrayFails = function(test) {
   });
 };
 
+module.exports.testUpdateNonContainerInPathFails = function(test) {
+  logger.trace('testUpdateNonContainerInPathFails');
+  config.mocks.fakedb.items = [{key: 'value1'}];
+  Item.update({key: 'value1'}, {$set: {'key.k2.k3': 5 }}, function (err, item) {
+    test.ok(err);
+    test.equal(
+      err.err,
+      "cannot use the part (k2 of key.k2.k3)" +
+      " to traverse the element ({ key: 'value1' })");
+    test.done();
+  });
+};
+
 module.exports.testDeleteByQuery = function(test) {
   logger.trace('testDeleteByQuery');
   config.mocks.fakedb.items = [{key: 'value1'}, {key: 'value2'}];
