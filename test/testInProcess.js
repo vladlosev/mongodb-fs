@@ -8,6 +8,8 @@ var util = require('util')
   , helper = require('../lib/helper')
   , config, logger, schema, dbConfig, dbOptions, Item, Unknown;
 
+var debugLogging = false;
+
 config = {
   port: 27027,
   mocks: {
@@ -25,7 +27,7 @@ config = {
       ]
     },
     category: path.basename(__filename),
-    level: 'WARN'  // 'TRACE'
+    level: debugLogging ? 'TRACE' : 'WARN'
   }
 };
 
@@ -45,6 +47,7 @@ mongoose.model('Item', new mongoose.Schema({key: String}));
 mongoose.model('ArrayItem', new mongoose.Schema({key: [String], key2: [String]}));
 mongoose.model('DateItem', new mongoose.Schema({date: Date}));
 mongoose.model('DateArrayItem', new mongoose.Schema({date: [Date]}));
+mongoose.model('NumberItem', new mongoose.Schema({key: Number}));
 
 var Item, ArrayItem;
 
@@ -54,7 +57,7 @@ module.exports.setUp = function(callback) {
   mongodbFs.start(function(err) {
     if (err) return callback(err);
     logger.trace('connect to db');
-    // mongoose.set('debug', true);
+    mongoose.set('debug', debugLogging);
     mongoose.connect(dbConfig.url, dbOptions, function(err) {
       if (err) {
         mongodbFs.stop();
@@ -288,6 +291,17 @@ module.exports.testDeleteByQuery = function(test) {
     test.ifError(err);
     test.equal(config.mocks.fakedb.items.length, 1);
     test.deepEqual(config.mocks.fakedb.items[0], {key: 'value1'});
+    test.done();
+  });
+};
+
+module.exports.testCount = function(test) {
+  logger.trace('testDelete');
+  config.mocks.fakedb.numberitems = [{key: 1}, {key: 2}, {key: 3}];
+  NumberItem = mongoose.connection.model('NumberItem');
+  NumberItem.count({key: {$gt: 1}}, function(err, n) {
+    test.ifError(err);
+    test.equal(n, 2);
     test.done();
   });
 };
