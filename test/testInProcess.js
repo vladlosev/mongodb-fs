@@ -309,7 +309,7 @@ module.exports.testDeleteByQuery = function(test) {
 };
 
 module.exports.testCount = function(test) {
-  logger.trace('testDelete');
+  logger.trace('testCount');
   config.mocks.fakedb.numberitems = [{key: 1}, {key: 2}, {key: 3}];
   NumberItem = mongoose.connection.model('NumberItem');
   NumberItem.count({key: {$gt: 1}}, function(err, n) {
