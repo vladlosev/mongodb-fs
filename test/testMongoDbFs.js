@@ -191,7 +191,7 @@ exports.testFindFilters = {
       test.done();
     });
   },
-   'test $or': function (test) {
+  'test $or': function (test) {
     Item.find({ $or: [
       { field1: 'value1' },
       { 'field2.field3': 32 }
@@ -201,7 +201,9 @@ exports.testFindFilters = {
       test.equal(items.length, 2);
       if (items.length === 2) {
         test.equal(items[0].field1, 'value1');
-        test.equal(items[0].field2.field3, 32);
+        test.equal(items[0].field2.field3, 31);
+        test.equal(items[1].field1, 'value11');
+        test.equal(items[1].field2.field3, 32);
       }
       test.done();
     });

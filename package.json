@@ -2,7 +2,14 @@
   "name": "mongodb-fs",
   "version": "0.1.0",
   "description": "Mongo DB Fake Server",
-  "keywords": ["mongodb", "mongo", "driver", "db", "mock", "test"],
+  "keywords": [
+    "mongodb",
+    "mongo",
+    "driver",
+    "db",
+    "mock",
+    "test"
+  ],
   "homepage": "https://github.com/openhoat/mongodb-fs",
   "main": "lib/mongodb-fs.js",
   "author": {
@@ -27,7 +34,8 @@
   },
   "dependencies": {
     "bson": "0.1.9",
-    "log4js": "0.6.6"
+    "log4js": "0.6.6",
+    "lodash": "~2.4.1"
   },
   "devDependencies": {
     "nodeunit": "0.8.0",

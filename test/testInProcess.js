@@ -8,6 +8,8 @@ var util = require('util')
   , helper = require('../lib/helper')
   , config, logger, schema, dbConfig, dbOptions, Item, Unknown;
 
+var debugLogging = false;
+
 config = {
   port: 27027,
   mocks: {
@@ -25,7 +27,7 @@ config = {
       ]
     },
     category: path.basename(__filename),
-    level: 'TRACE'
+    level: debugLogging ? 'TRACE' : 'WARN'
   }
 };
 
@@ -42,17 +44,20 @@ dbOptions = {
 };
 
 mongoose.model('Item', new mongoose.Schema({key: String}));
-mongoose.model('ArrayItem', new mongoose.Schema({key: [String]}));
+mongoose.model('ArrayItem', new mongoose.Schema({key: [String], key2: [String]}));
+mongoose.model('DateItem', new mongoose.Schema({date: Date}));
+mongoose.model('DateArrayItem', new mongoose.Schema({date: [Date]}));
+mongoose.model('NumberItem', new mongoose.Schema({key: Number}));
 
 var Item, ArrayItem;
 
-module.exports.setUp = function (callback) {
+module.exports.setUp = function(callback) {
   mongodbFs.init(config);
   logger.trace('init');
   mongodbFs.start(function(err) {
     if (err) return callback(err);
     logger.trace('connect to db');
-    mongoose.set('debug', true);
+    mongoose.set('debug', debugLogging);
     mongoose.connect(dbConfig.url, dbOptions, function(err) {
       if (err) {
         mongodbFs.stop();
@@ -65,14 +70,14 @@ module.exports.setUp = function (callback) {
   });
 };
 
-module.exports.tearDown = function (callback) {
+module.exports.tearDown = function(callback) {
   logger.trace('disconnect');
   mongoose.disconnect(function() {
     mongodbFs.stop(callback);
   });
 };
 
-module.exports.testFindTwice = function (test) {
+module.exports.testFindTwice = function(test) {
   logger.trace('testFind');
   config.mocks.fakedb.items = [{key: 'value1'}, {key: 'value2'}];
   Item.find(function (err, items) {});
@@ -86,7 +91,7 @@ module.exports.testFindTwice = function (test) {
   });
 };
 
-exports.testDelete = function (test) {
+module.exports.testDelete = function(test) {
   logger.trace('testDelete');
   config.mocks.fakedb.items = [{key: 'value1'}, {key: 'value2'}];
   Item.remove({key: 'value1'}, function(err) {
@@ -97,7 +102,7 @@ exports.testDelete = function (test) {
   });
 };
 
-exports.testInsert = function (test) {
+module.exports.testInsert = function(test) {
   logger.trace('testInsert');
   config.mocks.fakedb.items = [];
   var item = new Item({key: 'value'});
@@ -110,7 +115,7 @@ exports.testInsert = function (test) {
   });
 };
 
-exports.testUpdate = function (test) {
+module.exports.testUpdate = function(test) {
   logger.trace('testUpdate');
   config.mocks.fakedb.items = [
     {key: 'value1', _id: new mongoose.Types.ObjectId},
@@ -128,7 +133,7 @@ exports.testUpdate = function (test) {
   });
 };
 
-exports.testUpdateArrayPush = function (test) {
+module.exports.testUpdateArrayPush = function(test) {
   logger.trace('testUpdateArrayPush');
   var id = new mongoose.Types.ObjectId;
   config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1']}];
@@ -145,7 +150,22 @@ exports.testUpdateArrayPush = function (test) {
   });
 };
 
-exports.testUpdateArrayShift = function (test) {
+module.exports.testUpdatePushAllToNonArrayFails = function(test) {
+  logger.trace('testUpdatePushAllToNonArrayFails');
+  config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
+  ArrayItem.update({}, {$pushAll: {'key.1': ['a']}}, function(err) {
+    test.ok(err);
+    test.ifError(err.ok);
+    test.equal(err.err, "The field 'key.1' must be an array.");
+    test.equal(config.mocks.fakedb.arrayitems.length, 1);
+    test.deepEqual(
+      config.mocks.fakedb.arrayitems[0],
+      {key: ['value1', 'value2']});
+    test.done();
+  });
+};
+
+module.exports.testUpdateArrayShift = function(test) {
   logger.trace('testUpdateArrayShift');
   var id = new mongoose.Types.ObjectId;
   config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
@@ -163,7 +183,7 @@ exports.testUpdateArrayShift = function (test) {
   });
 };
 
-exports.testUpdateArraySetArray = function (test) {
+module.exports.testUpdateArraySetArray = function(test) {
   logger.trace('testUpdateArraySetArray');
   var id = new mongoose.Types.ObjectId;
   config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
@@ -181,13 +201,120 @@ exports.testUpdateArraySetArray = function (test) {
   });
 };
 
-exports.testDeleteByQuery = function (test) {
+module.exports.testUpdateDateField = function(test) {
+  logger.trace('testUpdateDateField');
+  var id = new mongoose.Types.ObjectId;
+  var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+  var now = new Date();
+  config.mocks.fakedb.dateitems = [
+    {_id: id, date: tenSecondsAgo}];
+  var DateItem = mongoose.connection.model('DateItem');
+  DateItem.findOne({_id: id}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    item.date = now;
+    item.save(function(err) {
+      test.ifError(err);
+      test.equal(config.mocks.fakedb.dateitems.length, 1);
+      test.equal(
+        config.mocks.fakedb.dateitems[0].date.toString(), now.toString());
+      test.done();
+    });
+  });
+};
+
+module.exports.testUpdateDateArrayField = function(test) {
+  logger.trace('testUpdateDateArrayField');
+  var id = new mongoose.Types.ObjectId;
+  var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+  var now = new Date();
+  config.mocks.fakedb.datearrayitems = [
+    {_id: id, date: tenSecondsAgo}];
+  var DateArrayItem = mongoose.connection.model('DateArrayItem');
+  DateArrayItem.findOne({_id: id}, function (err, item) {
+    test.ifError(err);
+    test.ok(item);
+    item.date = [now];
+    item.save(function(err) {
+      test.ifError(err);
+      test.equal(config.mocks.fakedb.datearrayitems.length, 1);
+      test.equal(
+        config.mocks.fakedb.datearrayitems[0].date[0].toString(), now.toString());
+      test.done();
+    });
+  });
+};
+
+module.exports.testUpdatePull = function(test) {
+  logger.trace('testUpdatePull');
+  config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
+  ArrayItem.update({}, {$pull: {key: 'value1'}}, function(err) {
+    test.ifError(err);
+    test.equal(config.mocks.fakedb.arrayitems.length, 1);
+    test.deepEqual(config.mocks.fakedb.arrayitems[0], {key: ['value2']});
+    test.done();
+  });
+};
+
+module.exports.testUpdatePullMultipleFields = function(test) {
+  logger.trace('testUpdatePullMultipleFields');
+  config.mocks.fakedb.arrayitems = [{key: ['a', 'b'], key2: ['c', 'd']}];
+  ArrayItem.update({}, {$pull: {key: 'a', key2: 'd'}}, function(err) {
+    test.ifError(err);
+    test.equal(config.mocks.fakedb.arrayitems.length, 1);
+    test.deepEqual(
+      config.mocks.fakedb.arrayitems[0],
+      {key: ['b'], key2: ['c']});
+    test.done();
+  });
+};
+
+module.exports.testUpdatePullFromNonArrayFails = function(test) {
+  logger.trace('testUpdatePullFromNonArrayFails');
+  config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
+  ArrayItem.update({}, {$pull: {'key.1': 'a'}}, function(err) {
+    test.ok(err);
+    test.ifError(err.ok);
+    test.equal(err.err, 'Cannot apply $pull to a non-array value');
+    test.equal(config.mocks.fakedb.arrayitems.length, 1);
+    test.deepEqual(
+      config.mocks.fakedb.arrayitems[0],
+      {key: ['value1', 'value2']});
+    test.done();
+  });
+};
+
+module.exports.testUpdateNonContainerInPathFails = function(test) {
+  logger.trace('testUpdateNonContainerInPathFails');
+  config.mocks.fakedb.items = [{key: 'value1'}];
+  Item.update({key: 'value1'}, {$set: {'key.k2.k3': 5 }}, function (err, item) {
+    test.ok(err);
+    test.equal(
+      err.err,
+      "cannot use the part (k2 of key.k2.k3)" +
+      " to traverse the element ({ key: 'value1' })");
+    test.done();
+  });
+};
+
+module.exports.testDeleteByQuery = function(test) {
   logger.trace('testDeleteByQuery');
   config.mocks.fakedb.items = [{key: 'value1'}, {key: 'value2'}];
   Item.remove({key: {$ne: 'value1'}}, function(err) {
     test.ifError(err);
     test.equal(config.mocks.fakedb.items.length, 1);
     test.deepEqual(config.mocks.fakedb.items[0], {key: 'value1'});
+    test.done();
+  });
+};
+
+module.exports.testCount = function(test) {
+  logger.trace('testCount');
+  config.mocks.fakedb.numberitems = [{key: 1}, {key: 2}, {key: 3}];
+  NumberItem = mongoose.connection.model('NumberItem');
+  NumberItem.count({key: {$gt: 1}}, function(err, n) {
+    test.ifError(err);
+    test.equal(n, 2);
     test.done();
   });
 };
