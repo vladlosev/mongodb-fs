@@ -48,6 +48,7 @@ mongoose.model('ArrayItem', new mongoose.Schema({key: [String], key2: [String]})
 mongoose.model('DateItem', new mongoose.Schema({date: Date}));
 mongoose.model('DateArrayItem', new mongoose.Schema({date: [Date]}));
 mongoose.model('NumberItem', new mongoose.Schema({key: Number}));
+mongoose.model('ArrayObjectIdItem', new mongoose.Schema({key: [mongoose.Types.ObjectId]}));
 
 var Item, ArrayItem;
 
@@ -252,6 +253,20 @@ module.exports.testUpdatePull = function(test) {
     test.ifError(err);
     test.equal(config.mocks.fakedb.arrayitems.length, 1);
     test.deepEqual(config.mocks.fakedb.arrayitems[0], {key: ['value2']});
+    test.done();
+  });
+};
+
+module.exports.testUpdatePullObjectIds = function(test) {
+  var id1 = new mongoose.Types.ObjectId();
+  var id2 = new mongoose.Types.ObjectId();
+  logger.trace('testUpdatePullObjectIds');
+  config.mocks.fakedb.arrayobjectiditems = [{key: [id1, id2]}];
+  ArrayObjectIdItem = mongoose.connection.model('ArrayObjectIdItem');
+  ArrayObjectIdItem.update({}, {$pull: {key: id1}}, function(err) {
+    test.ifError(err);
+    test.equal(config.mocks.fakedb.arrayobjectiditems.length, 1);
+    test.deepEqual(config.mocks.fakedb.arrayobjectiditems[0], {key: [id2]});
     test.done();
   });
 };
