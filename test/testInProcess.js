@@ -258,15 +258,15 @@ module.exports.testUpdatePull = function(test) {
 };
 
 module.exports.testUpdatePullObjectIds = function(test) {
-  var id1 = new mongoose.Types.ObjectId();
-  var id2 = new mongoose.Types.ObjectId();
+  var id = new mongoose.Types.ObjectId();
+  var idCopy = new mongoose.Types.ObjectId(id.toString());
   logger.trace('testUpdatePullObjectIds');
-  config.mocks.fakedb.arrayobjectiditems = [{key: [id1, id2]}];
+  config.mocks.fakedb.arrayobjectiditems = [{key: [id]}];
   ArrayObjectIdItem = mongoose.connection.model('ArrayObjectIdItem');
-  ArrayObjectIdItem.update({}, {$pull: {key: id1}}, function(err) {
+  ArrayObjectIdItem.update({}, {$pull: {key: idCopy}}, function(err) {
     test.ifError(err);
     test.equal(config.mocks.fakedb.arrayobjectiditems.length, 1);
-    test.deepEqual(config.mocks.fakedb.arrayobjectiditems[0], {key: [id2]});
+    test.deepEqual(config.mocks.fakedb.arrayobjectiditems[0], {key: []});
     test.done();
   });
 };

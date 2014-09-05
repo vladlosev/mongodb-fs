@@ -21,7 +21,7 @@ log.init({
 logger = log.getLogger();
 filter.init();
 
-function test1(test) {
+module.exports.test1 = function(test) {
   var items;
   items = filter.filterItems(mocks.fakedb.items, {
     field1: 'value1',
@@ -33,7 +33,7 @@ function test1(test) {
   test.done();
 }
 
-function test2(test) {
+module.exports.test2 = function(test) {
   var items;
   items = filter.filterItems(mocks.fakedb.items, {
     $or: [
@@ -47,7 +47,7 @@ function test2(test) {
   test.done();
 }
 
-function test3(test) {
+module.exports.test3 = function(test) {
   var items;
   items = filter.filterItems(mocks.fakedb.items, {
     field1: { '$in': ['value1', 'value21'] },
@@ -59,7 +59,7 @@ function test3(test) {
   test.done();
 }
 
-function test4(test) {
+module.exports.test4 = function(test) {
   var items;
   items = filter.filterItems(mocks.fakedb.items, {
     field5: { '$all': ['a', 'b'] },
@@ -71,7 +71,7 @@ function test4(test) {
   test.done();
 }
 
-function test5(test) {
+module.exports.test5 = function(test) {
   var items;
   items = filter.filterItems(mocks.fakedb.items, {
     'field2.field3': { $not: { $gt: 32 } }
@@ -82,12 +82,32 @@ function test5(test) {
   test.done();
 }
 
-exports.tests = {
-  test1: test1,
-  test2: test2,
-  test3: test3,
-  test4: test4,
-  test5: test5
-};
+module.exports.testFindItemsInArray = function(test) {
+  var docs = [{key: [1, 2]}];
+  var filtered = filter.filterItems(docs, {key: 2});
+  test.deepEqual(filtered, docs);
 
-module.exports = exports;
+  filtered = filter.filterItems(docs, {key: 3});
+  test.deepEqual(filtered, []);
+  test.done();
+}
+
+module.exports.testEqFindsItemsInArray = function(test) {
+  var docs = [{key: [1, 2]}];
+  var filtered = filter.filterItems(docs, {key: {$eq: 2}});
+  test.deepEqual(filtered, docs);
+
+  filtered = filter.filterItems(docs, {key: {$eq: 3}});
+  test.deepEqual(filtered, []);
+  test.done();
+}
+
+module.exports.testNeFindsItemsInArray = function(test) {
+  var docs = [{key: [1, 2]}];
+  var filtered = filter.filterItems(docs, {key: {$ne: 2}});
+  test.deepEqual(filtered, []);
+
+  filtered = filter.filterItems(docs, {key: {$ne: 3}});
+  test.deepEqual(filtered, docs);
+  test.done();
+}
