@@ -1,4 +1,5 @@
 var util = require('util')
+  , chai = require('chai')
   , path = require('path')
   , nodeunit = require('nodeunit')
   , mongodbFs = require('../lib/mongodb-fs')
@@ -6,11 +7,14 @@ var util = require('util')
   , Profess = require('profess')
   , log = require('../lib/log')
   , helper = require('../lib/helper')
+  , mocks = require('./mocks')
   , config, logger, schema, dbConfig, dbOptions, Item, Unknown;
+
+var logLevel = process.env.LOG_LEVEL || 'WARN';
 
 config = {
   port: 27027,
-  mocks: require('./mocks'),
+  mocks: {fakedb: {items: []}},
   fork: true,
   log: {
     log4js: {
@@ -22,7 +26,7 @@ config = {
       ]
     },
     category: path.basename(__filename),
-    level: 'TRACE'
+    level: logLevel
   }
 };
 
@@ -50,341 +54,318 @@ dbOptions = {
 mongoose.model('Item', schema);
 mongoose.model('Unknown', { name: String });
 
-exports.setUp = function (callback) {
-  var profess;
-  profess = new Profess();
-  profess.
-    do(function () {
-      //return profess.next();
-      if (!mongodbFs.isRunning()) {
-        mongodbFs.init(config);
-        logger.trace('init');
-        mongodbFs.start(profess.next);
-        nodeunit.on('complete', function () {
-          mongodbFs.stop();
-        });
-      } else {
-        profess.next();
-      }
-    }).
-    then(function () {
-      logger.trace('connect to db');
-      mongoose.connect(dbConfig.url, dbOptions, profess.next);
-      //test.ok(mongoose.connection.readyState);
-    }).
-    then(function () {
-      Item = mongoose.connection.model('Item');
-      Unknown = mongoose.connection.model('Unknown');
-      profess.next();
-    }).
-    then(callback);
-};
-
-exports.tearDown = function (callback) {
-  logger.trace('disconnect');
-  mongoose.disconnect(callback);
-};
-
-exports.testFindAll = function (test) {
-  logger.trace('testFindAll');
-  Item.find(function (err, items) {
-    test.ifError(err);
-    test.ok(items);
-    test.equal(items.length, 3);
-    test.done();
-  });
-};
-
-exports.testFindUnknown = function (test) {
-  logger.trace('testFindUnknown');
-  Unknown.find(function (err, items) {
-    test.ifError(err);
-    test.equal(items.length, 0);
-    test.done();
-  });
-};
-
-exports.testFindFilters = {
-  'test $all': function (test) {
-    Item.find({ 'field5': { $all: ['a', 'c'] } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 3) {
-        test.equal(items[0].field5.indexOf('a'), 0);
-        test.equal(items[0].field5.indexOf('b'), 1);
-        test.equal(items[0].field5.indexOf('c'), 2);
-      }
-      test.done();
-    });
-  },
-  'test $gt': function (test) {
-    Item.find({ 'field2.field3': { $gt: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 1) {
-        test.equal(items[0].field2.field3, 33);
-      }
-      test.done();
-    });
-  },
-  'test $gte': function (test) {
-    Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      test.done();
-    });
-  },
-  'test $in': function (test) {
-    Item.find({ 'field2.field3': { $in: [32, 33] } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      if (items.length === 2) {
-        test.equal(items[0].field2.field3, 32);
-        test.equal(items[1].field2.field3, 33);
-      }
-      test.done();
-    });
-  },
-  'test $lt': function (test) {
-    Item.find({ 'field2.field3': { $lt: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 1) {
-        test.equal(items[0].field2.field3, 31);
-      }
-      test.done();
-    });
-  },
-  'test $lte': function (test) {
-    Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      test.done();
-    });
-  },
-  'test $ne': function (test) {
-    Item.find({ 'field2.field3': { $ne: 32 } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      if (items.length === 2) {
-        test.equal(items[0].field2.field3, 31);
-        test.equal(items[1].field2.field3, 33);
-      }
-      test.done();
-    });
-  },
-  'test $nin': function (test) {
-    Item.find({ 'field2.field3': { $nin: [32, 33] } }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length === 1) {
-        test.equal(items[0].field2.field3, 31);
-      }
-      test.done();
-    });
-  },
-  'test $or': function (test) {
-    Item.find({ $or: [
-      { field1: 'value1' },
-      { 'field2.field3': 32 }
-    ]}, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 2);
-      if (items.length === 2) {
-        test.equal(items[0].field1, 'value1');
-        test.equal(items[0].field2.field3, 31);
-        test.equal(items[1].field1, 'value11');
-        test.equal(items[1].field2.field3, 32);
-      }
-      test.done();
-    });
-  },
-  'test simple filter': function (test) {
-    Item.find({ 'field2.field3': 32 }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length) {
-        test.equal(items[0].field2.field3, 32);
-      }
-      test.done();
-    });
-  },
-  'test 2 fields filter': function (test) {
-    Item.find({ field1: 'value1', 'field2.field3': 31 }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length) {
-        test.equal(items[0].field1, 'value1');
-        test.equal(items[0].field2.field3, 31);
-      }
-      test.done();
-    });
-  },
-  'test string filter': function (test) {
-    Item.find({ 'field2.field4': 'value24' }, function (err, items) {
-      test.ifError(err);
-      test.ok(items);
-      test.equal(items.length, 1);
-      if (items.length) {
-        test.equal(items[0].field2.field4, 'value24');
-      }
-      test.done();
-    });
-  }
-};
-
-exports.testFindById = function (test) {
-  logger.trace('testFindById');
-  var itemId;
-  Item.findOne({field1: 'value1'}, function (err, item) {
-    test.ifError(err);
-    test.ok(item);
-    logger.trace('item :', item);
-    itemId = item.id;
-    logger.trace('itemId :', itemId);
-    Item.findById(itemId, function (err, item) {
-      test.ifError(err);
-      test.ok(item);
-      test.done();
-    });
-  });
-};
-
-exports.testFindByIdAndUpdate = function (test) {
-  var itemId;
-  Item.findOne({field1: 'value1'}, function (err, item) {
-    test.ifError(err);
-    test.ok(item);
-    logger.trace('item :', item);
-    itemId = item.id;
-    logger.trace('itemId :', itemId);
-    Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function (err, item) {
-      test.ifError(err);
-      test.ok(item);
-      //test.equal(item.field1, 'value1Modified');
-    });
-  });
-};
-
-exports.testRemove = function (test) {
-  logger.trace('testRemove');
-  Item.findOne({ 'field1': 'value11' }, function (err, item) {
-    logger.info('item :', item);
-    test.ifError(err);
-    test.ok(item);
-    item.remove(function (err) {
-      test.ifError(err);
-      test.done();
-    });
-  });
-};
-
-exports.testCrud = function (test) {
-  var profess, noItems, errorHandler, item;
-  profess = new Profess();
-  errorHandler = profess.handleError(function (err) {
-    test.ifError(err);
-    test.done();
-  });
-  profess.
-    do(function () { // load all items
-      Item.find(errorHandler);
-    }).
-    then(function (items) { // check
-      test.ok(items);
-      noItems = items.length;
-      profess.next();
-    }).
-    then(function () { // insert item
-      item = new Item({
-        field1: 'value101',
-        field2: {
-          field3: 1031,
-          field4: 'value104'
+describe('MongoDB-Fs', function() {
+  before(function(done) {
+    var profess;
+    profess = new Profess();
+    profess.
+      do(function () {
+        //return profess.next();
+        if (!mongodbFs.isRunning()) {
+          mongodbFs.init(config);
+          logger.trace('init');
+          mongodbFs.start(profess.next);
+          nodeunit.on('complete', function () {
+            mongodbFs.stop();
+          });
+        } else {
+          profess.next();
         }
+      }).
+      then(function () {
+        logger.trace('connect to db');
+        mongoose.connect(dbConfig.url, dbOptions, profess.next);
+        if (logLevel == 'TRACE') {
+          mongoose.set('debug', true);
+        }
+        //test.ok(mongoose.connection.readyState);
+      }).
+      then(function () {
+        Item = mongoose.connection.model('Item');
+        Unknown = mongoose.connection.model('Unknown');
+        profess.next();
+      }).
+      then(done);
+  });
+
+  after(function(done) {
+    logger.trace('disconnect');
+    mongoose.disconnect(function() {
+      mongodbFs.stop(done);
+    });
+  });
+
+  beforeEach(function(done) {
+    // Restore the database to the original state to make tests
+    // order-independent.
+    Item.remove({}, function(err) {
+      if (err) done(err);
+      Item.collection.insert(mocks.fakedb.items, done);
+    });
+  });
+
+  describe('find', function() {
+    it('finds all documents', function(done) {
+      Item.find(function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(3);
+        done();
       });
-      item.save(errorHandler);
-    }).
-    then(function (item) { // check
-      test.ok(item);
-      profess.next();
-    }).
-    then(function (item) { // find item
-      Item.findOne({ 'field2.field3': 1031 }, errorHandler);
-    }).
-    then(function (savedItem) { // check saved item
-      test.equal(item.field1, savedItem.field1);
-      test.equal(item.field2.field3, savedItem.field2.field3);
-      test.equal(item.field2.field4, savedItem.field2.field4);
-      profess.next();
-    }).
-    then(function () { // load all items
-      Item.find(errorHandler);
-    }).
-    then(function (items) { // check
-      test.ok(items);
-      test.equal(items.length, noItems + 1);
-      profess.next();
-    }).
-    then(function () { // update item
-      item.field2.field3 = 2031;
-      item.save(errorHandler);
-    }).
-    then(function (item) { // check
-      test.ok(item);
-      profess.next();
-    }).
-    then(function () { // remove item
-      Item.remove({_id: item._id }, errorHandler);
-    }).
-    then(function () { // load all items
-      Item.find(errorHandler);
-    }).
-    then(function (items) { // check
-      test.ok(items);
-      test.equal(items.length, noItems);
-      profess.next();
-    }).
-    then(function () { // end
-      test.done();
     });
-};
 
-exports.testInsert = function (test) {
-  var item;
-  logger.trace('testInsert');
-  item = new Item({
-    field1: 'value101',
-    field2: {
-      field3: 1031,
-      field4: 'value104'
-    },
-    field5: ['h', 'i', 'j']
-  });
-  item.save(function (err, savedItem) {
-    test.ifError(err);
-    test.ok(savedItem);
-    item.remove(function(err) {
-      test.ifError(err);
-      test.done();
+    it('finds no unknown documents', function(done) {
+      Unknown.find(function(err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(0);
+        done();
+      });
     });
   });
-};
 
-// disabled tests :
-// With current Mongoose (3.8.15), findByIdAndUpdate requires implementing the
-// findandmodify command.
-delete exports.testFindByIdAndUpdate;
+  describe('filters', function() {
+    it('$all', function(done) {
+      Item.find({ 'field5': { $all: ['a', 'c'] } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(1);
+        chai.expect(items[0].toObject())
+          .to.have.property('field5')
+          .that.is.deep.equal(['a', 'b', 'c']);
+        done();
+      });
+    });
 
-module.exports = exports;
+    it('$gt', function(done) {
+      Item.find({ 'field2.field3': { $gt: 32 } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(1);
+        chai.expect(items[0].toObject())
+          .to.have.deep.property('field2.field3', 33);
+        done();
+      });
+    });
+
+    it('$gte', function(done) {
+      Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(2);
+        done();
+      });
+    });
+
+    it('$in', function(done) {
+      Item.find({ 'field2.field3': { $in: [32, 33] } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(2);
+        chai.expect(items[0]).to.have.deep.property('field2.field3', 32);
+        chai.expect(items[1]).to.have.deep.property('field2.field3', 33);
+        done();
+      });
+    });
+
+    it('$lt', function(done) {
+      Item.find({ 'field2.field3': { $lt: 32 } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(1);
+        chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
+        done();
+      });
+    });
+
+    it('$lte', function(done) {
+      Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(2);
+        done();
+      });
+    });
+
+    it('$ne', function(done) {
+      Item.find({ 'field2.field3': { $ne: 32 } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(2);
+        chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
+        chai.expect(items[1]).to.have.deep.property('field2.field3', 33);
+        done();
+      });
+    });
+
+    it('$nin', function(done) {
+      Item.find({ 'field2.field3': { $nin: [32, 33] } }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(1);
+        chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
+        done();
+      });
+    });
+
+    it('$or', function(done) {
+      Item.find({ $or: [
+        { field1: 'value1' },
+        { 'field2.field3': 32 }
+      ]}, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(2);
+        chai.expect(items[0]).to.have.property('field1', 'value1');
+        chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
+        chai.expect(items[1]).to.have.property('field1', 'value11');
+        chai.expect(items[1]).to.have.deep.property('field2.field3', 32);
+        done();
+      });
+    });
+
+    it('simple filter', function(done) {
+      Item.find({ 'field2.field3': 32 }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(1);
+        chai.expect(items[0]).to.have.deep.property('field2.field3', 32);
+        done();
+      });
+    });
+
+    it('2 fields filter', function(done) {
+      Item.find({ field1: 'value1', 'field2.field3': 31 }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(1);
+        chai.expect(items[0]).to.have.property('field1', 'value1');
+        chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
+        done();
+      });
+    });
+
+    it('string filter', function(done) {
+      Item.find({ 'field2.field4': 'value24' }, function (err, items) {
+        chai.expect(err).to.not.exist;
+        chai.expect(items).to.have.length(1);
+        chai.expect(items[0]).to.have.deep.property('field2.field4', 'value24');
+        done();
+      });
+    });
+  });
+
+  it('findById', function(done) {
+    Item.findOne({field1: 'value1'}, function (err, item) {
+      chai.expect(err).to.not.exist;
+      chai.expect(item).to.have.property('id');
+      logger.trace('item :', item);
+      var itemId = item.id;
+      logger.trace('itemId :', itemId);
+      Item.findById(itemId, function (err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.not.be.empty;
+        done();
+      });
+    });
+  });
+
+  xit('findByIdAndUpdate', function(done) {
+    Item.findOne({field1: 'value1'}, function (err, item) {
+      chai.expect(err).to.not.exist;
+      chai.expect(item).to.have.property('id');
+      logger.trace('item :', item);
+      var itemId = item.id;
+      logger.trace('itemId :', itemId);
+      Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function (err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.not.be.empty;
+        chai.expect(item).to.have.property('field1', 'value1Modified');
+      });
+    });
+  });
+
+  it('remove', function(done) {
+    Item.findOne({ 'field1': 'value11' }, function (err, item) {
+      chai.expect(err).to.not.exist;
+      chai.expect(item).to.exist;
+      item.remove(function (err) {
+        chai.expect(err).to.not.exist;
+        // TODO(vladlosev): verify that item no longer loads.
+        done();
+      });
+    });
+  });
+
+  it('crud methods work', function(done) {
+    var noItems, item;
+    var profess = new Profess();
+    var errorHandler = profess.handleError(done);
+    profess.
+      do(function () { // load all items
+        Item.find(errorHandler);
+      }).
+      then(function (items) { // check
+        chai.expect(items).to.not.be.empty;
+        noItems = items.length;
+        profess.next();
+      }).
+      then(function () { // insert item
+        item = new Item({
+          field1: 'value101',
+          field2: {
+            field3: 1031,
+            field4: 'value104'
+          }
+        });
+        item.save(errorHandler);
+      }).
+      then(function (item) { // check
+        chai.expect(item).to.exist;
+        profess.next();
+      }).
+      then(function (item) { // find item
+        Item.findOne({ 'field2.field3': 1031 }, errorHandler);
+      }).
+      then(function (savedItem) { // check saved item
+        chai.expect(item).to.have.property('field1', savedItem.field1);
+        chai.expect(item)
+          .to.have.deep.property('field2.field3', savedItem.field2.field3);
+        chai.expect(item)
+          .to.have.deep.property('field2.field4', savedItem.field2.field4);
+        profess.next();
+      }).
+      then(function () { // load all items
+        Item.find(errorHandler);
+      }).
+      then(function (items) { // check
+        chai.expect(items).to.have.length(noItems + 1);
+        profess.next();
+      }).
+      then(function () { // update item
+        item.field2.field3 = 2031;
+        item.save(errorHandler);
+      }).
+      then(function (item) { // check
+        chai.expect(item).to.exist;
+        profess.next();
+      }).
+      then(function () { // remove item
+        Item.remove({_id: item._id }, errorHandler);
+      }).
+      then(function () { // load all items
+        Item.find(errorHandler);
+      }).
+      then(function (items) { // check
+        chai.expect(items).to.have.length(noItems);
+        profess.next();
+      }).
+      then(done);
+  });
+
+  it('insert', function(done) {
+    var item = new Item({
+      field1: 'value101',
+      field2: {
+        field3: 1031,
+        field4: 'value104'
+      },
+      field5: ['h', 'i', 'j']
+    });
+    item.save(function (err, savedItem) {
+      chai.expect(err).to.not.exist;
+      chai.expect(item).to.exist;
+      item.remove(function(err) {
+        chai.expect(err).to.not.exist;
+        done();
+      });
+    });
+  });
+});
