@@ -59,20 +59,20 @@ describe('MongoDB-Fs', function() {
     var profess;
     profess = new Profess();
     profess.
-      do(function () {
+      do(function() {
         //return profess.next();
         if (!mongodbFs.isRunning()) {
           mongodbFs.init(config);
           logger.trace('init');
           mongodbFs.start(profess.next);
-          nodeunit.on('complete', function () {
+          nodeunit.on('complete', function() {
             mongodbFs.stop();
           });
         } else {
           profess.next();
         }
       }).
-      then(function () {
+      then(function() {
         logger.trace('connect to db');
         mongoose.connect(dbConfig.url, dbOptions, profess.next);
         if (logLevel == 'TRACE') {
@@ -80,7 +80,7 @@ describe('MongoDB-Fs', function() {
         }
         //test.ok(mongoose.connection.readyState);
       }).
-      then(function () {
+      then(function() {
         Item = mongoose.connection.model('Item');
         Unknown = mongoose.connection.model('Unknown');
         profess.next();
@@ -124,7 +124,7 @@ describe('MongoDB-Fs', function() {
 
   describe('filters', function() {
     it('$all', function(done) {
-      Item.find({ 'field5': { $all: ['a', 'c'] } }, function (err, items) {
+      Item.find({'field5': {$all: ['a', 'c']}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(1);
         chai.expect(items[0].toObject())
@@ -135,7 +135,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$gt', function(done) {
-      Item.find({ 'field2.field3': { $gt: 32 } }, function (err, items) {
+      Item.find({'field2.field3': {$gt: 32}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(1);
         chai.expect(items[0].toObject())
@@ -145,7 +145,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$gte', function(done) {
-      Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
+      Item.find({'field2.field3': {$gte: 32}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(2);
         done();
@@ -153,7 +153,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$in', function(done) {
-      Item.find({ 'field2.field3': { $in: [32, 33] } }, function (err, items) {
+      Item.find({'field2.field3': {$in: [32, 33]}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(2);
         chai.expect(items[0]).to.have.deep.property('field2.field3', 32);
@@ -163,7 +163,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$lt', function(done) {
-      Item.find({ 'field2.field3': { $lt: 32 } }, function (err, items) {
+      Item.find({'field2.field3': { $lt: 32}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(1);
         chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
@@ -172,7 +172,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$lte', function(done) {
-      Item.find({ 'field2.field3': { $gte: 32 } }, function (err, items) {
+      Item.find({'field2.field3': {$gte: 32}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(2);
         done();
@@ -180,7 +180,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$ne', function(done) {
-      Item.find({ 'field2.field3': { $ne: 32 } }, function (err, items) {
+      Item.find({'field2.field3': {$ne: 32}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(2);
         chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
@@ -190,7 +190,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$nin', function(done) {
-      Item.find({ 'field2.field3': { $nin: [32, 33] } }, function (err, items) {
+      Item.find({'field2.field3': {$nin: [32, 33]}}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(1);
         chai.expect(items[0]).to.have.deep.property('field2.field3', 31);
@@ -199,10 +199,10 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$or', function(done) {
-      Item.find({ $or: [
-        { field1: 'value1' },
-        { 'field2.field3': 32 }
-      ]}, function (err, items) {
+      Item.find({$or: [
+        {field1: 'value1'},
+        {'field2.field3': 32}
+      ]}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(2);
         chai.expect(items[0]).to.have.property('field1', 'value1');
@@ -214,7 +214,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('simple filter', function(done) {
-      Item.find({ 'field2.field3': 32 }, function (err, items) {
+      Item.find({'field2.field3': 32}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(1);
         chai.expect(items[0]).to.have.deep.property('field2.field3', 32);
@@ -223,7 +223,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('2 fields filter', function(done) {
-      Item.find({ field1: 'value1', 'field2.field3': 31 }, function (err, items) {
+      Item.find({field1: 'value1', 'field2.field3': 31}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(1);
         chai.expect(items[0]).to.have.property('field1', 'value1');
@@ -233,7 +233,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('string filter', function(done) {
-      Item.find({ 'field2.field4': 'value24' }, function (err, items) {
+      Item.find({'field2.field4': 'value24'}, function(err, items) {
         chai.expect(err).to.not.exist;
         chai.expect(items).to.have.length(1);
         chai.expect(items[0]).to.have.deep.property('field2.field4', 'value24');
@@ -243,13 +243,13 @@ describe('MongoDB-Fs', function() {
   });
 
   it('findById', function(done) {
-    Item.findOne({field1: 'value1'}, function (err, item) {
+    Item.findOne({field1: 'value1'}, function(err, item) {
       chai.expect(err).to.not.exist;
       chai.expect(item).to.have.property('id');
       logger.trace('item :', item);
       var itemId = item.id;
       logger.trace('itemId :', itemId);
-      Item.findById(itemId, function (err, item) {
+      Item.findById(itemId, function(err, item) {
         chai.expect(err).to.not.exist;
         chai.expect(item).to.not.be.empty;
         done();
@@ -258,13 +258,13 @@ describe('MongoDB-Fs', function() {
   });
 
   xit('findByIdAndUpdate', function(done) {
-    Item.findOne({field1: 'value1'}, function (err, item) {
+    Item.findOne({field1: 'value1'}, function(err, item) {
       chai.expect(err).to.not.exist;
       chai.expect(item).to.have.property('id');
       logger.trace('item :', item);
       var itemId = item.id;
       logger.trace('itemId :', itemId);
-      Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function (err, item) {
+      Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function(err, item) {
         chai.expect(err).to.not.exist;
         chai.expect(item).to.not.be.empty;
         chai.expect(item).to.have.property('field1', 'value1Modified');
@@ -273,10 +273,10 @@ describe('MongoDB-Fs', function() {
   });
 
   it('remove', function(done) {
-    Item.findOne({ 'field1': 'value11' }, function (err, item) {
+    Item.findOne({'field1': 'value11'}, function(err, item) {
       chai.expect(err).to.not.exist;
       chai.expect(item).to.exist;
-      item.remove(function (err) {
+      item.remove(function(err) {
         chai.expect(err).to.not.exist;
         // TODO(vladlosev): verify that item no longer loads.
         done();
@@ -289,15 +289,15 @@ describe('MongoDB-Fs', function() {
     var profess = new Profess();
     var errorHandler = profess.handleError(done);
     profess.
-      do(function () { // load all items
+      do(function() { // load all items
         Item.find(errorHandler);
       }).
-      then(function (items) { // check
+      then(function(items) { // check
         chai.expect(items).to.not.be.empty;
         noItems = items.length;
         profess.next();
       }).
-      then(function () { // insert item
+      then(function() { // insert item
         item = new Item({
           field1: 'value101',
           field2: {
@@ -307,14 +307,14 @@ describe('MongoDB-Fs', function() {
         });
         item.save(errorHandler);
       }).
-      then(function (item) { // check
+      then(function(item) { // check
         chai.expect(item).to.exist;
         profess.next();
       }).
-      then(function (item) { // find item
-        Item.findOne({ 'field2.field3': 1031 }, errorHandler);
+      then(function(item) { // find item
+        Item.findOne({'field2.field3': 1031}, errorHandler);
       }).
-      then(function (savedItem) { // check saved item
+      then(function(savedItem) { // check saved item
         chai.expect(item).to.have.property('field1', savedItem.field1);
         chai.expect(item)
           .to.have.deep.property('field2.field3', savedItem.field2.field3);
@@ -322,28 +322,28 @@ describe('MongoDB-Fs', function() {
           .to.have.deep.property('field2.field4', savedItem.field2.field4);
         profess.next();
       }).
-      then(function () { // load all items
+      then(function() { // load all items
         Item.find(errorHandler);
       }).
-      then(function (items) { // check
+      then(function(items) { // check
         chai.expect(items).to.have.length(noItems + 1);
         profess.next();
       }).
-      then(function () { // update item
+      then(function() { // update item
         item.field2.field3 = 2031;
         item.save(errorHandler);
       }).
-      then(function (item) { // check
+      then(function(item) { // check
         chai.expect(item).to.exist;
         profess.next();
       }).
-      then(function () { // remove item
-        Item.remove({_id: item._id }, errorHandler);
+      then(function() { // remove item
+        Item.remove({_id: item._id}, errorHandler);
       }).
-      then(function () { // load all items
+      then(function() { // load all items
         Item.find(errorHandler);
       }).
-      then(function (items) { // check
+      then(function(items) { // check
         chai.expect(items).to.have.length(noItems);
         profess.next();
       }).
@@ -359,7 +359,7 @@ describe('MongoDB-Fs', function() {
       },
       field5: ['h', 'i', 'j']
     });
-    item.save(function (err, savedItem) {
+    item.save(function(err, savedItem) {
       chai.expect(err).to.not.exist;
       chai.expect(item).to.exist;
       item.remove(function(err) {
