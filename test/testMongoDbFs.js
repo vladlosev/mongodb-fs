@@ -1,7 +1,7 @@
 var util = require('util')
+  , _ = require('lodash')
   , chai = require('chai')
   , path = require('path')
-  , nodeunit = require('nodeunit')
   , mongodbFs = require('../lib/mongodb-fs')
   , mongoose = require('mongoose')
   , Profess = require('profess')
@@ -56,36 +56,24 @@ mongoose.model('Unknown', { name: String });
 
 describe('MongoDB-Fs', function() {
   before(function(done) {
-    var profess;
-    profess = new Profess();
-    profess.
-      do(function() {
-        //return profess.next();
-        if (!mongodbFs.isRunning()) {
-          mongodbFs.init(config);
-          logger.trace('init');
-          mongodbFs.start(profess.next);
-          nodeunit.on('complete', function() {
-            mongodbFs.stop();
-          });
-        } else {
-          profess.next();
+    mongodbFs.init(config);
+    if (logLevel == 'TRACE') {
+      mongoose.set('debug', true);
+    }
+    logger.trace('init');
+    mongodbFs.start(function(err) {
+      if (err) return done(err);
+      logger.trace('connect to db');
+      mongoose.connect(dbConfig.url, dbOptions, function(err) {
+        if (err) {
+          mongodbFs.stop(function() { done(err); });
+          return;
         }
-      }).
-      then(function() {
-        logger.trace('connect to db');
-        mongoose.connect(dbConfig.url, dbOptions, profess.next);
-        if (logLevel == 'TRACE') {
-          mongoose.set('debug', true);
-        }
-        //test.ok(mongoose.connection.readyState);
-      }).
-      then(function() {
         Item = mongoose.connection.model('Item');
         Unknown = mongoose.connection.model('Unknown');
-        profess.next();
-      }).
-      then(done);
+        done();
+      });
+    });
   });
 
   after(function(done) {
@@ -100,25 +88,15 @@ describe('MongoDB-Fs', function() {
     // order-independent.
     Item.remove({}, function(err) {
       if (err) done(err);
-      Item.collection.insert(mocks.fakedb.items, done);
-    });
-  });
-
-  describe('find', function() {
-    it('finds all documents', function(done) {
-      Item.find(function (err, items) {
-        chai.expect(err).to.not.exist;
-        chai.expect(items).to.have.length(3);
-        done();
-      });
-    });
-
-    it('finds no unknown documents', function(done) {
-      Unknown.find(function(err, items) {
-        chai.expect(err).to.not.exist;
-        chai.expect(items).to.have.length(0);
-        done();
-      });
+      // Use copies of the original mock objects to avoid one test affecting
+      // others by modifying objects in the database.
+      Item.collection.insert(_.cloneDeep(mocks.fakedb.items, function(value) {
+        if (value instanceof mongoose.Types.ObjectId) {
+          return new mongoose.Types.ObjectId(value.toString());
+        } else {
+          return undefined;
+        }
+      }), done);
     });
   });
 
@@ -242,130 +220,209 @@ describe('MongoDB-Fs', function() {
     });
   });
 
-  it('findById', function(done) {
-    Item.findOne({field1: 'value1'}, function(err, item) {
-      chai.expect(err).to.not.exist;
-      chai.expect(item).to.have.property('id');
-      logger.trace('item :', item);
-      var itemId = item.id;
-      logger.trace('itemId :', itemId);
-      Item.findById(itemId, function(err, item) {
+  describe('find', function() {
+    it('finds all documents', function(done) {
+      Item.find(function (err, items) {
         chai.expect(err).to.not.exist;
-        chai.expect(item).to.not.be.empty;
+        chai.expect(items).to.have.length(3);
         done();
       });
     });
-  });
 
-  xit('findByIdAndUpdate', function(done) {
-    Item.findOne({field1: 'value1'}, function(err, item) {
-      chai.expect(err).to.not.exist;
-      chai.expect(item).to.have.property('id');
-      logger.trace('item :', item);
-      var itemId = item.id;
-      logger.trace('itemId :', itemId);
-      Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function(err, item) {
+    it('finds no unknown documents', function(done) {
+      Unknown.find(function(err, items) {
         chai.expect(err).to.not.exist;
-        chai.expect(item).to.not.be.empty;
-        chai.expect(item).to.have.property('field1', 'value1Modified');
-      });
-    });
-  });
-
-  it('remove', function(done) {
-    Item.findOne({'field1': 'value11'}, function(err, item) {
-      chai.expect(err).to.not.exist;
-      chai.expect(item).to.exist;
-      item.remove(function(err) {
-        chai.expect(err).to.not.exist;
-        // TODO(vladlosev): verify that item no longer loads.
+        chai.expect(items).to.have.length(0);
         done();
       });
     });
-  });
 
-  it('crud methods work', function(done) {
-    var noItems, item;
-    var profess = new Profess();
-    var errorHandler = profess.handleError(done);
-    profess.
-      do(function() { // load all items
-        Item.find(errorHandler);
-      }).
-      then(function(items) { // check
-        chai.expect(items).to.not.be.empty;
-        noItems = items.length;
-        profess.next();
-      }).
-      then(function() { // insert item
-        item = new Item({
-          field1: 'value101',
-          field2: {
-            field3: 1031,
-            field4: 'value104'
-          }
+    it('findById', function(done) {
+      Item.findOne({field1: 'value1'}, function(err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.have.property('id');
+        logger.trace('item :', item);
+        var itemId = item.id;
+        logger.trace('itemId :', itemId);
+        Item.findById(itemId, function(err, item) {
+          chai.expect(err).to.not.exist;
+          chai.expect(item).to.not.be.empty;
+          done();
         });
-        item.save(errorHandler);
-      }).
-      then(function(item) { // check
-        chai.expect(item).to.exist;
-        profess.next();
-      }).
-      then(function(item) { // find item
-        Item.findOne({'field2.field3': 1031}, errorHandler);
-      }).
-      then(function(savedItem) { // check saved item
-        chai.expect(item).to.have.property('field1', savedItem.field1);
-        chai.expect(item)
-          .to.have.deep.property('field2.field3', savedItem.field2.field3);
-        chai.expect(item)
-          .to.have.deep.property('field2.field4', savedItem.field2.field4);
-        profess.next();
-      }).
-      then(function() { // load all items
-        Item.find(errorHandler);
-      }).
-      then(function(items) { // check
-        chai.expect(items).to.have.length(noItems + 1);
-        profess.next();
-      }).
-      then(function() { // update item
-        item.field2.field3 = 2031;
-        item.save(errorHandler);
-      }).
-      then(function(item) { // check
-        chai.expect(item).to.exist;
-        profess.next();
-      }).
-      then(function() { // remove item
-        Item.remove({_id: item._id}, errorHandler);
-      }).
-      then(function() { // load all items
-        Item.find(errorHandler);
-      }).
-      then(function(items) { // check
-        chai.expect(items).to.have.length(noItems);
-        profess.next();
-      }).
-      then(done);
+      });
+    });
+
+    xit('findByIdAndUpdate', function(done) {
+      Item.findOne({field1: 'value1'}, function(err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.have.property('id');
+        logger.trace('item :', item);
+        var itemId = item.id;
+        logger.trace('itemId :', itemId);
+        Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function(err, item) {
+          chai.expect(err).to.not.exist;
+          chai.expect(item).to.not.be.empty;
+          chai.expect(item).to.have.property('field1', 'value1Modified');
+        });
+      });
+    });
   });
 
-  it('insert', function(done) {
-    var item = new Item({
+  describe('insert', function() {
+    var newItemFields = {
       field1: 'value101',
       field2: {
         field3: 1031,
-        field4: 'value104'
-      },
-      field5: ['h', 'i', 'j']
-    });
-    item.save(function(err, savedItem) {
-      chai.expect(err).to.not.exist;
-      chai.expect(item).to.exist;
-      item.remove(function(err) {
+        field4: 'value104'},
+      field5: ['h', 'i', 'j']};
+
+    it('saves document to collection', function(done) {
+      var item = new Item(newItemFields);
+      item.save(function(err, savedItem) {
         chai.expect(err).to.not.exist;
-        done();
+        chai.expect(savedItem).to.exist;
+        Item.findById(savedItem._id, function(err, newItem) {
+          chai.expect(err).to.not.exist;
+          chai.expect(newItem).to.exist;
+          chai.expect(newItem.toObject())
+            .to.deep.equal(savedItem.toObject());
+          Item.collection.count({}, function(err, count) {
+            chai.expect(err).to.not.exist;
+            chai.expect(count).to.equal(mocks.fakedb.items.length + 1);
+            done();
+          });
+        });
       });
+    });
+
+    it('changes document count', function(done) {
+      var item = new Item(newItemFields);
+      item.save(function(err, savedItem) {
+        chai.expect(err).to.not.exist;
+        chai.expect(savedItem).to.exist;
+        Item.collection.count({}, function(err, count) {
+          chai.expect(err).to.not.exist;
+          chai.expect(count).to.equal(mocks.fakedb.items.length + 1);
+          done();
+        });
+      });
+    });
+  });
+
+  describe('remove', function() {
+    it('removes document from collection', function(done) {
+      Item.findOne({'field1': 'value11'}, function(err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.exist;
+        item.remove(function(err) {
+          chai.expect(err).to.not.exist;
+          Item.findById(item._id, function(err, noItem) {
+            chai.expect(err).to.not.exist;
+            chai.expect(noItem).to.not.exist;
+            done();
+          });
+        });
+      });
+    });
+
+    it('changes documents count', function(done) {
+      Item.findOne({'field1': 'value11'}, function(err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.exist;
+        item.remove(function(err) {
+          Item.collection.count({}, function(err, count) {
+            chai.expect(err).to.not.exist;
+            chai.expect(count).to.equal(mocks.fakedb.items.length - 1);
+            done();
+          });
+        });
+      });
+    });
+
+    it('removes documents by query', function(done) {
+      Item.remove({'field2.field3': {$gt: 31}}, function(err, numAffected) {
+        chai.expect(err).to.not.exist;
+        chai.expect(numAffected).to.equal(2);
+        Item.find({}, function(err, items) {
+          chai.expect(err).to.not.exist;
+          chai.expect(items).to.have.length(1);
+          chai.expect(items[0].toObject())
+            .to.deep.equal(mocks.fakedb.items[0]);
+          done();
+        });
+      });
+    });
+  });
+
+  describe('update', function() {
+    it('updates top-level fields', function(done) {
+      Item.findOne({'field1': 'value11'}, function(err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.exist;
+        item.field1 = 'new value';
+        item.save(function(err) {
+          chai.expect(err).to.not.exist;
+          Item.findById(item._id, function(err, newItem) {
+            chai.expect(err).to.not.exist;
+            chai.expect(newItem).to.exist;
+            chai.expect(newItem.toObject()).to.deep.equal(item.toObject());
+            done();
+          });
+        });
+      });
+    });
+
+    it('does not change document count', function(done) {
+      Item.findOne({}, function(err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.exist;
+        item.field1 = 'new value';
+        item.save(function(err) {
+          Item.collection.count({}, function(err, count) {
+            chai.expect(err).to.not.exist;
+            chai.expect(count).to.equal(mocks.fakedb.items.length);
+            done();
+          });
+        });
+      });
+    });
+
+    it('updates fields in subdocuments', function(done) {
+      Item.findOne({'field1': 'value11'}, function(err, item) {
+        chai.expect(err).to.not.exist;
+        chai.expect(item).to.have.deep.property('field2.field3');
+        item.field2.field3 = 424242;
+        item.save(function(err) {
+          chai.expect(err).to.not.exist;
+          Item.findById(item._id, function(err, newItem) {
+            chai.expect(err).to.not.exist;
+            chai.expect(newItem).to.exist;
+            chai.expect(newItem.toObject()).to.deep.equal(item.toObject());
+            done();
+          });
+        });
+      });
+    });
+
+    it('updates documents by query', function(done) {
+      Item.update(
+        {'field2.field3': {$gt: 31}},
+        {$set: {field1: 'new value'}},
+        {multi: true},
+        function(err, numAffected) {
+          chai.expect(err).to.not.exist;
+          chai.expect(numAffected).to.equal(2);
+          Item.find({}, function(err, items) {
+            chai.expect(err).to.not.exist;
+            chai.expect(items)
+              .to.have.deep.property('[0].field1', 'value1');
+            chai.expect(items)
+              .to.have.deep.property('[1].field1', 'new value');
+            chai.expect(items)
+              .to.have.deep.property('[2].field1', 'new value');
+            done();
+          });
+        });
     });
   });
 });
