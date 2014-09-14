@@ -1,10 +1,13 @@
 var util = require('util')
+  , chai = require('chai')
   , path = require('path')
   , nodeunit = require('nodeunit')
   , log = require('../lib/log')
   , helper = require('../lib/helper')
   , filter = require('../lib/filter')
   , logger;
+
+var logLevel = process.env.LOG_LEVEL || 'WARN';
 
 log.init({
   log4js: {
@@ -16,96 +19,84 @@ log.init({
     ]
   },
   category: path.basename(__filename),
-  level: 'TRACE'
+  level: logLevel
 });
 logger = log.getLogger();
-filter.init();
 
-function testSelector(test, selector, expectedResult) {
-  var rootNode;
-  rootNode = filter.buildOpNode(selector);
-  logger.debug('rootNode :', util.inspect(rootNode, {depth: null}));
-  test.ok(rootNode);
-  test.equal(JSON.stringify(rootNode), JSON.stringify(expectedResult));
-  test.done();
-}
-
-function test1(test) {
-  testSelector(test, {
-    a: 'avalue',
-    'b': 3
-  }, {
-    op: '$and',
-    field: null,
-    args: [
-      { op: '$eq', field: 'a', args: [ '"avalue"' ] },
-      { op: '$eq', field: 'b', args: [ '3' ] }
-    ]
+describe('buildOpNode', function() {
+  before(function() {
+    filter.init();
   });
-}
 
-function test2(test) {
-  testSelector(test, {
-    $or: [
-      {a: 'avalue'},
-      {'b': 3}
-    ]
-  }, {
-    op: '$or',
-    field: null,
-    args: [
-      { op: '$eq', field: 'a', args: [ '"avalue"' ] },
-      { op: '$eq', field: 'b', args: [ '3' ] }
-    ]
+  it('handles basic match', function() {
+    var rootNode = filter.buildOpNode({a: 'avalue', 'b': 3});
+    chai.expect(rootNode).to.deep.equal({
+      op: '$and',
+      field: null,
+      args: [
+        { op: '$eq', field: 'a', args: [ '"avalue"' ] },
+        { op: '$eq', field: 'b', args: [ '3' ] }
+      ]
+    });
   });
-}
 
-function test3(test) {
-  testSelector(test, {
-    field1: { '$in': ['value1', 'value21'] },
-    'field2.field3': { $ne: 32 }
-  }, {
-    op: '$and',
-    field: null,
-    args: [
-      { op: '$in', field: 'field1', args: [ '"value1"', '"value21"' ] },
-      { op: '$ne', field: 'field2.field3', args: [ '32' ] }
-    ]
+  it('handles $or', function() {
+    var rootNode = filter.buildOpNode({
+      $or: [
+        {a: 'avalue'},
+        {'b': 3}
+      ]
+    });
+    chai.expect(rootNode).to.deep.equal({
+      op: '$or',
+      field: null,
+      args: [
+        { op: '$eq', field: 'a', args: [ '"avalue"' ] },
+        { op: '$eq', field: 'b', args: [ '3' ] }
+      ]
+    });
   });
-}
 
-function test4(test) {
-  testSelector(test, {
-    field5: { '$all': ['a', 'b'] },
-    'field2.field3': { '$gt': 31 }
-  }, {
-    op: '$and',
-    field: null,
-    args: [
-      { op: '$all', field: 'field5', args: [ '"a"', '"b"' ] },
-      { op: '$gt', field: 'field2.field3', args: [ '31' ] }
-    ]
+  it('handles $and', function() {
+    var rootNode = filter.buildOpNode({
+      field1: { '$in': ['value1', 'value21'] },
+      'field2.field3': { $ne: 32 }
+    });
+    chai.expect(rootNode).to.deep.equal({
+      op: '$and',
+      field: null,
+      args: [
+        { op: '$in', field: 'field1', args: [ '"value1"', '"value21"' ] },
+        { op: '$ne', field: 'field2.field3', args: [ '32' ] }
+      ]
+    });
   });
-}
 
-function test5(test) {
-  testSelector(test, {
-    'field2.field3': { $not: { $gt: 32 } }
-  }, {
-    op: '$not',
-    field: 'field2.field3',
-    args: [
-      { op: '$gt', field: 'field2.field3', args: [ '32' ] }
-    ]
+  it('handles $all', function() {
+    var rootNode = filter.buildOpNode({
+      field5: { '$all': ['a', 'b'] },
+      'field2.field3': { '$gt': 31 }
+    });
+    chai.expect(rootNode).to.deep.equal({
+      op: '$and',
+      field: null,
+      args: [
+        { op: '$all', field: 'field5', args: [ '"a"', '"b"' ] },
+        { op: '$gt', field: 'field2.field3', args: [ '31' ] }
+      ]
+    });
   });
-}
 
-exports.tests = {
-  test1: test1,
-  test2: test2,
-  test3: test3,
-  test4: test4,
-  test5: test5
-};
-
-module.exports = exports;
+  it('handles $not', function() {
+    var rootNode = filter.buildOpNode({
+      'field2.field3': { $not: { $gt: 32 } }
+    });
+    chai.expect(rootNode).to.deep.equal({
+      op: '$not',
+      field: 'field2.field3',
+      args: [
+        { op: '$gt', field: 'field2.field3', args: [ '32' ] }
+      ]
+    });
+  });
+});
