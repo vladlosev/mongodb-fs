@@ -2,8 +2,7 @@ var path = require('path')
   , chai = require('chai')
   , log = require('../lib/log')
   , filter = require('../lib/filter')
-  , mocks = require('./mocks')
-  , logger;
+  , mocks = require('./mocks');
 
 var logLevel = process.env.LOG_LEVEL || 'WARN';
 
@@ -19,7 +18,6 @@ log.init({
   category: path.basename(__filename),
   level: logLevel
 });
-logger = log.getLogger();
 
 describe('filterItems', function() {
   before(function() {
@@ -90,7 +88,7 @@ describe('filterItems', function() {
     chai.expect(filtered).to.deep.equal([]);
   });
 
-  it('$new finds items in array', function() {
+  it('$ne finds items in array', function() {
     var docs = [{key: [1, 2]}];
     var filtered = filter.filterItems(docs, {key: {$ne: 2}});
     chai.expect(filtered).to.deep.equal([]);
