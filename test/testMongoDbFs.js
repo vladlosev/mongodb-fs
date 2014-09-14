@@ -5,7 +5,6 @@ var util = require('util')
   , mongodbFs = require('../lib/mongodb-fs')
   , mongoose = require('mongoose')
   , log = require('../lib/log')
-  , helper = require('../lib/helper')
   , mocks = require('./mocks')
   , config, logger, schema, dbConfig, dbOptions, Item, Unknown;
 

@@ -1,7 +1,6 @@
 var path = require('path')
   , chai = require('chai')
   , log = require('../lib/log')
-  , helper = require('../lib/helper')
   , filter = require('../lib/filter')
   , mocks = require('./mocks')
   , logger;

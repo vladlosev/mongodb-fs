@@ -1,9 +1,7 @@
 var util = require('util')
   , chai = require('chai')
   , path = require('path')
-  , nodeunit = require('nodeunit')
   , log = require('../lib/log')
-  , helper = require('../lib/helper')
   , filter = require('../lib/filter')
   , logger;
 

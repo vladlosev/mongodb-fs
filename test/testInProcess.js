@@ -1,11 +1,9 @@
 var util = require('util')
   , chai = require('chai')
   , path = require('path')
-  , nodeunit = require('nodeunit')
   , mongodbFs = require('../lib/mongodb-fs')
   , mongoose = require('mongoose')
   , log = require('../lib/log')
-  , helper = require('../lib/helper')
   , config, logger, schema, dbConfig, dbOptions, SimpleItem, Unknown;
 
 var debugLogging = false;
