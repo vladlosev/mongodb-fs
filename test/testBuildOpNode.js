@@ -2,8 +2,7 @@ var util = require('util')
   , chai = require('chai')
   , path = require('path')
   , log = require('../lib/log')
-  , filter = require('../lib/filter')
-  , logger;
+  , filter = require('../lib/filter');
 
 var logLevel = process.env.LOG_LEVEL || 'WARN';
 
@@ -19,16 +18,17 @@ log.init({
   category: path.basename(__filename),
   level: logLevel
 });
-logger = log.getLogger();
 
 describe('buildOpNode', function() {
+  var expect = chai.expect;
+
   before(function() {
     filter.init();
   });
 
   it('handles basic match', function() {
     var rootNode = filter.buildOpNode({a: 'avalue', 'b': 3});
-    chai.expect(rootNode).to.deep.equal({
+    expect(rootNode).to.deep.equal({
       op: '$and',
       field: null,
       args: [
@@ -45,7 +45,7 @@ describe('buildOpNode', function() {
         {'b': 3}
       ]
     });
-    chai.expect(rootNode).to.deep.equal({
+    expect(rootNode).to.deep.equal({
       op: '$or',
       field: null,
       args: [
@@ -60,7 +60,7 @@ describe('buildOpNode', function() {
       field1: { '$in': ['value1', 'value21'] },
       'field2.field3': { $ne: 32 }
     });
-    chai.expect(rootNode).to.deep.equal({
+    expect(rootNode).to.deep.equal({
       op: '$and',
       field: null,
       args: [
@@ -75,7 +75,7 @@ describe('buildOpNode', function() {
       field5: { '$all': ['a', 'b'] },
       'field2.field3': { '$gt': 31 }
     });
-    chai.expect(rootNode).to.deep.equal({
+    expect(rootNode).to.deep.equal({
       op: '$and',
       field: null,
       args: [
@@ -89,7 +89,7 @@ describe('buildOpNode', function() {
     var rootNode = filter.buildOpNode({
       'field2.field3': { $not: { $gt: 32 } }
     });
-    chai.expect(rootNode).to.deep.equal({
+    expect(rootNode).to.deep.equal({
       op: '$not',
       field: 'field2.field3',
       args: [

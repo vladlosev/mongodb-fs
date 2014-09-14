@@ -6,7 +6,7 @@ var util = require('util')
   , log = require('../lib/log')
   , config, logger, schema, dbConfig, dbOptions, SimpleItem, Unknown;
 
-var debugLogging = false;
+var logLevel = process.env.LOG_LEVEL || 'WARN';
 
 config = {
   port: 27027,
@@ -25,7 +25,7 @@ config = {
       ]
     },
     category: path.basename(__filename),
-    level: debugLogging ? 'TRACE' : 'WARN'
+    level: logLevel
   }
 };
 
@@ -51,13 +51,15 @@ mongoose.model('ArrayObjectIdItem', new mongoose.Schema({key: [mongoose.Types.Ob
 var SimpleItem, ArrayItem;
 
 describe('MongoDb-Fs in-process operations do not hang', function() {
+  var expect = chai.expect;
+
   before(function(done) {
     mongodbFs.init(config);
     logger.trace('init');
     mongodbFs.start(function(err) {
       if (err) return done(err);
       logger.trace('connect to db');
-      mongoose.set('debug', debugLogging);
+      mongoose.set('debug', logLevel === 'TRACE');
       mongoose.connect(dbConfig.url, dbOptions, function(err) {
         if (err) {
           mongodbFs.stop(function() { done(err); });
@@ -91,10 +93,10 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
       SimpleItem.find(function (err, items) {});
       SimpleItem.find(function (err, items) {
-        chai.expect(err).to.not.exist;
-        chai.expect(items).to.have.length(2);
-        chai.expect(items[0]).to.have.property('key', 'value1');
-        chai.expect(items[1]).to.have.property('key', 'value2');
+        expect(err).to.not.exist;
+        expect(items).to.have.length(2);
+        expect(items[0]).to.have.property('key', 'value1');
+        expect(items[1]).to.have.property('key', 'value2');
         done();
       });
     });
@@ -104,9 +106,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('basic', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
       SimpleItem.remove({key: 'value1'}, function(err) {
-        chai.expect(err).to.not.exist;
-        chai.expect(config.mocks.fakedb.simpleitems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.simpleitems[0])
+        expect(err).to.not.exist;
+        expect(config.mocks.fakedb.simpleitems).to.have.length(1);
+        expect(config.mocks.fakedb.simpleitems[0])
           .to.have.property('key', 'value2');
         done();
       });
@@ -115,9 +117,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('by query', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
       SimpleItem.remove({key: {$ne: 'value1'}}, function(err) {
-        chai.expect(err).to.not.exist;
-        chai.expect(config.mocks.fakedb.simpleitems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.simpleitems[0])
+        expect(err).to.not.exist;
+        expect(config.mocks.fakedb.simpleitems).to.have.length(1);
+        expect(config.mocks.fakedb.simpleitems[0])
           .to.have.property('key', 'value1');
         done();
       });
@@ -130,9 +132,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.simpleitems = [];
       var item = new SimpleItem({key: 'value'});
       item.save(function(err) {
-        chai.expect(err).to.not.exist;
-        chai.expect(config.mocks.fakedb.simpleitems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.simpleitems[0])
+        expect(err).to.not.exist;
+        expect(config.mocks.fakedb.simpleitems).to.have.length(1);
+        expect(config.mocks.fakedb.simpleitems[0])
           .to.have.property('key', 'value');
         done();
       });
@@ -145,13 +147,13 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         {key: 'value1', _id: new mongoose.Types.ObjectId},
         {key: 'value2', _id: new mongoose.Types.ObjectId}];
       SimpleItem.findOne({key: 'value1'}, function (err, item) {
-        chai.expect(err).to.not.exist;
-        chai.expect(item).to.exist;
+        expect(err).to.not.exist;
+        expect(item).to.exist;
         item.key = 'new value';
         item.save(function(err) {
-          chai.expect(err).to.not.exist;
-          chai.expect(config.mocks.fakedb.simpleitems).to.have.length(2);
-          chai.expect(config.mocks.fakedb.simpleitems[0])
+          expect(err).to.not.exist;
+          expect(config.mocks.fakedb.simpleitems).to.have.length(2);
+          expect(config.mocks.fakedb.simpleitems[0])
             .to.have.property('key', 'new value');
           done();
         });
@@ -162,13 +164,13 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1']}];
       ArrayItem.findOne({_id: id}, function (err, item) {
-        chai.expect(err).to.not.exist;
-        chai.expect(item).to.have.property('key');
+        expect(err).to.not.exist;
+        expect(item).to.have.property('key');
         item.key.push('value2');
         item.save(function(err) {
-          chai.expect(err).to.not.exist;
-          chai.expect(config.mocks.fakedb.arrayitems).to.have.length(1);
-          chai.expect(config.mocks.fakedb.arrayitems[0])
+          expect(err).to.not.exist;
+          expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+          expect(config.mocks.fakedb.arrayitems[0])
             .to.have.property('key')
             .deep.equal(['value1', 'value2']);
           done();
@@ -179,12 +181,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('$pushAll to no-array fails', function(done) {
       config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
       ArrayItem.update({}, {$pushAll: {'key.1': ['a']}}, function(err) {
-        chai.expect(err).to.exist;
-        chai.expect(err.ok).to.be.false;
-        chai.expect(err)
+        expect(err).to.exist;
+        expect(err.ok).to.be.false;
+        expect(err)
           .to.have.property('err', "The field 'key.1' must be an array.");
-        chai.expect(config.mocks.fakedb.arrayitems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.arrayitems[0])
+        expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+        expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['value1', 'value2']});
         done();
       });
@@ -194,13 +196,13 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
       ArrayItem.findOne({_id: id}, function (err, item) {
-        chai.expect(err).to.not.exist;
-        chai.expect(item).to.have.property('key');
+        expect(err).to.not.exist;
+        expect(item).to.have.property('key');
         item.key.shift();
         item.save(function(err) {
-          chai.expect(err).to.not.exist;
-          chai.expect(config.mocks.fakedb.arrayitems).to.have.length(1);
-          chai.expect(config.mocks.fakedb.arrayitems[0])
+          expect(err).to.not.exist;
+          expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+          expect(config.mocks.fakedb.arrayitems[0])
             .to.have.property('key')
             .deep.equal(['value2']);
           done();
@@ -212,13 +214,13 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
       ArrayItem.findOne({_id: id}, function (err, item) {
-        chai.expect(err).to.not.exist;
-        chai.expect(item).to.have.property('key');
+        expect(err).to.not.exist;
+        expect(item).to.have.property('key');
         item.key = ['one', 'two'];
         item.save(function(err) {
-          chai.expect(err).to.not.exist;
-          chai.expect(config.mocks.fakedb.arrayitems).to.have.length(1);
-          chai.expect(config.mocks.fakedb.arrayitems[0])
+          expect(err).to.not.exist;
+          expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+          expect(config.mocks.fakedb.arrayitems[0])
             .to.have.property('key')
             .deep.equal(['one', 'two']);
           done();
@@ -234,13 +236,13 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         {_id: id, date: tenSecondsAgo}];
       var DateItem = mongoose.connection.model('DateItem');
       DateItem.findOne({_id: id}, function (err, item) {
-        chai.expect(err).to.not.exist;
-        chai.expect(item).to.have.property('date');
+        expect(err).to.not.exist;
+        expect(item).to.have.property('date');
         item.date = now;
         item.save(function(err) {
-          chai.expect(err).to.not.exist;
-          chai.expect(config.mocks.fakedb.dateitems).to.have.length(1);
-          chai.expect(config.mocks.fakedb.dateitems[0].date.toString())
+          expect(err).to.not.exist;
+          expect(config.mocks.fakedb.dateitems).to.have.length(1);
+          expect(config.mocks.fakedb.dateitems[0].date.toString())
             .equal(now.toString());
           done();
         });
@@ -255,15 +257,15 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         {_id: id, date: tenSecondsAgo}];
       var DateArrayItem = mongoose.connection.model('DateArrayItem');
       DateArrayItem.findOne({_id: id}, function (err, item) {
-        chai.expect(err).to.not.exist;
-        chai.expect(item).to.have.property('date');
+        expect(err).to.not.exist;
+        expect(item).to.have.property('date');
         item.date = [now];
         item.save(function(err) {
-          chai.expect(err).to.not.exist;
-          chai.expect(config.mocks.fakedb.datearrayitems).to.have.length(1);
-          chai.expect(config.mocks.fakedb.datearrayitems[0])
+          expect(err).to.not.exist;
+          expect(config.mocks.fakedb.datearrayitems).to.have.length(1);
+          expect(config.mocks.fakedb.datearrayitems[0])
             .to.have.deep.property('date[0]');
-          chai.expect(config.mocks.fakedb.datearrayitems[0].date[0].toString())
+          expect(config.mocks.fakedb.datearrayitems[0].date[0].toString())
             .equal(now.toString());
           done();
         });
@@ -273,9 +275,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('$pull', function(done) {
       config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
       ArrayItem.update({}, {$pull: {key: 'value1'}}, function(err) {
-        chai.expect(err).to.not.exist;
-        chai.expect(config.mocks.fakedb.arrayitems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.arrayitems[0])
+        expect(err).to.not.exist;
+        expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+        expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['value2']});
         done();
       });
@@ -287,9 +289,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.arrayobjectiditems = [{key: [id]}];
       ArrayObjectIdItem = mongoose.connection.model('ArrayObjectIdItem');
       ArrayObjectIdItem.update({}, {$pull: {key: idCopy}}, function(err) {
-        chai.expect(err).to.not.exist;
-        chai.expect(config.mocks.fakedb.arrayobjectiditems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.arrayobjectiditems[0])
+        expect(err).to.not.exist;
+        expect(config.mocks.fakedb.arrayobjectiditems).to.have.length(1);
+        expect(config.mocks.fakedb.arrayobjectiditems[0])
           .to.deep.equal({key: []});
         done();
       });
@@ -298,9 +300,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('$pull multiple fields', function(done) {
       config.mocks.fakedb.arrayitems = [{key: ['a', 'b'], key2: ['c', 'd']}];
       ArrayItem.update({}, {$pull: {key: 'a', key2: 'd'}}, function(err) {
-        chai.expect(err).to.not.exist;
-        chai.expect(config.mocks.fakedb.arrayitems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.arrayitems[0])
+        expect(err).to.not.exist;
+        expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+        expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['b'], key2: ['c']});
         done();
       });
@@ -309,12 +311,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('$pull from non-array fails', function(done) {
       config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
       ArrayItem.update({}, {$pull: {'key.1': 'a'}}, function(err) {
-        chai.expect(err).to.exist;
-        chai.expect(err.ok).to.be.false;
-        chai.expect(err)
+        expect(err).to.exist;
+        expect(err.ok).to.be.false;
+        expect(err)
           .to.have.property('err', 'Cannot apply $pull to a non-array value');
-        chai.expect(config.mocks.fakedb.arrayitems).to.have.length(1);
-        chai.expect(config.mocks.fakedb.arrayitems[0])
+        expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+        expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['value1', 'value2']});
         done();
       });
@@ -325,9 +327,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       SimpleItem.update(
         {key: 'value1'},
         {$set: {'key.k2.k3': 5 }}, function (err, item) {
-        chai.expect(err).to.exist;
-        chai.expect(err.ok).to.be.false;
-        chai.expect(err)
+        expect(err).to.exist;
+        expect(err.ok).to.be.false;
+        expect(err)
           .to.have.property(
             'err',
             'cannot use the part (k2 of key.k2.k3)' +

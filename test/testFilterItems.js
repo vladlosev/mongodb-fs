@@ -20,6 +20,8 @@ log.init({
 });
 
 describe('filterItems', function() {
+  var expect = chai.expect;
+
   before(function() {
     filter.init();
   });
@@ -30,7 +32,7 @@ describe('filterItems', function() {
       field1: 'value1',
       'field2.field3': 31
     });
-    chai.expect(items).to.have.length(1);
+    expect(items).to.have.length(1);
   });
 
   it('$or', function() {
@@ -41,7 +43,7 @@ describe('filterItems', function() {
         {'field2.field3': 32}
       ]
     });
-    chai.expect(items).to.have.length(2);
+    expect(items).to.have.length(2);
   });
 
   it('$in and $ne', function() {
@@ -50,7 +52,7 @@ describe('filterItems', function() {
       field1: { '$in': ['value1', 'value21'] },
       'field2.field3': { $ne: 32 }
     });
-    chai.expect(items).to.have.length(2);
+    expect(items).to.have.length(2);
   });
 
   it('$all and $gt', function() {
@@ -59,7 +61,7 @@ describe('filterItems', function() {
       field5: { '$all': ['a', 'b'] },
       'field2.field3': { '$gt': 31 }
     });
-    chai.expect(items).to.have.length(1);
+    expect(items).to.have.length(1);
   });
 
   it('$not', function() {
@@ -67,33 +69,33 @@ describe('filterItems', function() {
     items = filter.filterItems(mocks.fakedb.items, {
       'field2.field3': { $not: { $gt: 32 } }
     });
-    chai.expect(items).to.have.length(2);
+    expect(items).to.have.length(2);
   });
 
   it('basic match finds items in array', function() {
     var docs = [{key: [1, 2]}];
     var filtered = filter.filterItems(docs, {key: 2});
-    chai.expect(filtered).to.deep.equal(docs);
+    expect(filtered).to.deep.equal(docs);
 
     filtered = filter.filterItems(docs, {key: 3});
-    chai.expect(filtered).to.deep.equal([]);
+    expect(filtered).to.deep.equal([]);
   });
 
   it('$eq finds items in array', function() {
     var docs = [{key: [1, 2]}];
     var filtered = filter.filterItems(docs, {key: {$eq: 2}});
-    chai.expect(filtered).to.deep.equal(docs);
+    expect(filtered).to.deep.equal(docs);
 
     filtered = filter.filterItems(docs, {key: {$eq: 3}});
-    chai.expect(filtered).to.deep.equal([]);
+    expect(filtered).to.deep.equal([]);
   });
 
   it('$ne finds items in array', function() {
     var docs = [{key: [1, 2]}];
     var filtered = filter.filterItems(docs, {key: {$ne: 2}});
-    chai.expect(filtered).to.deep.equal([]);
+    expect(filtered).to.deep.equal([]);
 
     filtered = filter.filterItems(docs, {key: {$ne: 3}});
-    chai.expect(filtered).to.deep.equal(docs);
+    expect(filtered).to.deep.equal(docs);
   });
 });
