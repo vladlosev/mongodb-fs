@@ -12,6 +12,9 @@
   ],
   "homepage": "https://github.com/openhoat/mongodb-fs",
   "main": "lib/mongodb-fs.js",
+  "scripts": {
+    "test": "mocha test/test*.js"
+  },
   "author": {
     "name": "Olivier Penhoat",
     "email": "openhoat@gmail.com"
@@ -38,9 +41,8 @@
     "lodash": "~2.4.1"
   },
   "devDependencies": {
-    "nodeunit": "0.8.0",
-    "profess": "0.0.4",
     "mongoose": "3.6.11",
-    "colors": "0.6.0-1"
+    "mocha": "~1.21.4",
+    "chai": "~1.9.1"
   }
 }
