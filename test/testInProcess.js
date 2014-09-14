@@ -339,15 +339,16 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     });
   });
 
+  describe('count', function() {
+    it('returns the umber of queried documents', function(done) {
+      config.mocks.fakedb.numberitems = [{key: 1}, {key: 2}, {key: 3}];
+      NumberItem = mongoose.connection.model('NumberItem');
+      NumberItem.count({key: {$gt: 1}}, function(err, n) {
+        expect(err).to.not.exist;
+        expect(n).to.equal(2);
+        done();
+      });
+    });
+  });
 });
 
-module.exports.testCount = function(test) {
-  logger.trace('testCount');
-  config.mocks.fakedb.numberitems = [{key: 1}, {key: 2}, {key: 3}];
-  NumberItem = mongoose.connection.model('NumberItem');
-  NumberItem.count({key: {$gt: 1}}, function(err, n) {
-    test.ifError(err);
-    test.equal(n, 2);
-    test.done();
-  });
-};
