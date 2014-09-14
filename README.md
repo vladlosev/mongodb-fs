@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/vladlosev/mongodb-fs.svg?branch=stable)](https://travis-ci.org/vladlosev/mongodb-fs)
 ## What's mongodb-fs?
 
   mongodb-fs is a fake, lightweight, seamlessly mongodb server for nodejs (fs stands for 'Fake Server', or 'File System').
