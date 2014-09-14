@@ -4,7 +4,6 @@ var util = require('util')
   , nodeunit = require('nodeunit')
   , mongodbFs = require('../lib/mongodb-fs')
   , mongoose = require('mongoose')
-  , Profess = require('profess')
   , log = require('../lib/log')
   , helper = require('../lib/helper')
   , config, logger, schema, dbConfig, dbOptions, SimpleItem, Unknown;
