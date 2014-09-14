@@ -1,10 +1,12 @@
 var path = require('path')
-  , nodeunit = require('nodeunit')
+  , chai = require('chai')
   , log = require('../lib/log')
   , helper = require('../lib/helper')
   , filter = require('../lib/filter')
   , mocks = require('./mocks')
   , logger;
+
+var logLevel = process.env.LOG_LEVEL || 'WARN';
 
 log.init({
   log4js: {
@@ -16,98 +18,85 @@ log.init({
     ]
   },
   category: path.basename(__filename),
-  level: 'TRACE'
+  level: logLevel
 });
 logger = log.getLogger();
-filter.init();
 
-module.exports.test1 = function(test) {
-  var items;
-  items = filter.filterItems(mocks.fakedb.items, {
-    field1: 'value1',
-    'field2.field3': 31
+describe('filterItems', function() {
+  before(function() {
+    filter.init();
   });
-  logger.debug('items :', items);
-  test.ok(items);
-  test.equal(items.length, 1);
-  test.done();
-}
 
-module.exports.test2 = function(test) {
-  var items;
-  items = filter.filterItems(mocks.fakedb.items, {
-    $or: [
-      {field1: 'value1'},
-      {'field2.field3': 32}
-    ]
+  it('basic field match', function() {
+    var items;
+    items = filter.filterItems(mocks.fakedb.items, {
+      field1: 'value1',
+      'field2.field3': 31
+    });
+    chai.expect(items).to.have.length(1);
   });
-  logger.debug('items :', items);
-  test.ok(items);
-  test.equal(items.length, 2);
-  test.done();
-}
 
-module.exports.test3 = function(test) {
-  var items;
-  items = filter.filterItems(mocks.fakedb.items, {
-    field1: { '$in': ['value1', 'value21'] },
-    'field2.field3': { $ne: 32 }
+  it('$or', function() {
+    var items;
+    items = filter.filterItems(mocks.fakedb.items, {
+      $or: [
+        {field1: 'value1'},
+        {'field2.field3': 32}
+      ]
+    });
+    chai.expect(items).to.have.length(2);
   });
-  logger.debug('items :', items);
-  test.ok(items);
-  test.equal(items.length, 2);
-  test.done();
-}
 
-module.exports.test4 = function(test) {
-  var items;
-  items = filter.filterItems(mocks.fakedb.items, {
-    field5: { '$all': ['a', 'b'] },
-    'field2.field3': { '$gt': 31 }
+  it('$in and $ne', function() {
+    var items;
+    items = filter.filterItems(mocks.fakedb.items, {
+      field1: { '$in': ['value1', 'value21'] },
+      'field2.field3': { $ne: 32 }
+    });
+    chai.expect(items).to.have.length(2);
   });
-  logger.debug('items :', items);
-  test.ok(items);
-  test.equal(items.length, 1);
-  test.done();
-}
 
-module.exports.test5 = function(test) {
-  var items;
-  items = filter.filterItems(mocks.fakedb.items, {
-    'field2.field3': { $not: { $gt: 32 } }
+  it('$all and $gt', function() {
+    var items;
+    items = filter.filterItems(mocks.fakedb.items, {
+      field5: { '$all': ['a', 'b'] },
+      'field2.field3': { '$gt': 31 }
+    });
+    chai.expect(items).to.have.length(1);
   });
-  logger.debug('items :', items);
-  test.ok(items);
-  test.equal(items.length, 2);
-  test.done();
-}
 
-module.exports.testFindItemsInArray = function(test) {
-  var docs = [{key: [1, 2]}];
-  var filtered = filter.filterItems(docs, {key: 2});
-  test.deepEqual(filtered, docs);
+  it('$not', function() {
+    var items;
+    items = filter.filterItems(mocks.fakedb.items, {
+      'field2.field3': { $not: { $gt: 32 } }
+    });
+    chai.expect(items).to.have.length(2);
+  });
 
-  filtered = filter.filterItems(docs, {key: 3});
-  test.deepEqual(filtered, []);
-  test.done();
-}
+  it('basic match finds items in array', function() {
+    var docs = [{key: [1, 2]}];
+    var filtered = filter.filterItems(docs, {key: 2});
+    chai.expect(filtered).to.deep.equal(docs);
 
-module.exports.testEqFindsItemsInArray = function(test) {
-  var docs = [{key: [1, 2]}];
-  var filtered = filter.filterItems(docs, {key: {$eq: 2}});
-  test.deepEqual(filtered, docs);
+    filtered = filter.filterItems(docs, {key: 3});
+    chai.expect(filtered).to.deep.equal([]);
+  });
 
-  filtered = filter.filterItems(docs, {key: {$eq: 3}});
-  test.deepEqual(filtered, []);
-  test.done();
-}
+  it('$eq finds items in array', function() {
+    var docs = [{key: [1, 2]}];
+    var filtered = filter.filterItems(docs, {key: {$eq: 2}});
+    chai.expect(filtered).to.deep.equal(docs);
 
-module.exports.testNeFindsItemsInArray = function(test) {
-  var docs = [{key: [1, 2]}];
-  var filtered = filter.filterItems(docs, {key: {$ne: 2}});
-  test.deepEqual(filtered, []);
+    filtered = filter.filterItems(docs, {key: {$eq: 3}});
+    chai.expect(filtered).to.deep.equal([]);
+  });
 
-  filtered = filter.filterItems(docs, {key: {$ne: 3}});
-  test.deepEqual(filtered, docs);
-  test.done();
-}
+  it('$new finds items in array', function() {
+    var docs = [{key: [1, 2]}];
+    var filtered = filter.filterItems(docs, {key: {$ne: 2}});
+    chai.expect(filtered).to.deep.equal([]);
+
+    filtered = filter.filterItems(docs, {key: {$ne: 3}});
+    chai.expect(filtered).to.deep.equal(docs);
+  });
+});
