@@ -382,7 +382,6 @@ describe('filterItems', function() {
 
       var filtered = filter.filterItems(items, {'field1.3': null});
       expect(_.pluck(filtered, '_id')).to.deep.equal([]);
-
     });
 
     describe('match regular expressions', function() {
@@ -592,31 +591,193 @@ describe('filterItems', function() {
   });
 
   describe('dates support', function() {
-    xit('match basic values', function() {
+    var date1 = new Date('1995-02-08');
+    var date2 = new Date('1998-05-28');
+    var date3 = new Date('2009-04-01');
+    var date4 = new Date('2011-09-01');
+    var date10 = new Date('2014-05-08');
+    var date11 = new Date('2014-09-22');
+    // Make copies to ensure that lookup does not use identity comparison.
+    var date1Copy = new Date(date1.valueOf());
+    var date2Copy = new Date(date2.valueOf());
+    var date3Copy = new Date(date3.valueOf());
+    var date4Copy = new Date(date4.valueOf());
+    var date10Copy = new Date(date10.valueOf());
+    var date11Copy = new Date(date11.valueOf());
+    var items = [
+      {_id: 1, field0: date1, field1: [date1, date2], field2: {a: date10}},
+      {_id: 2, field0: date2, field1: [date2, date3], field2: {a: date11}},
+      {_id: 3, field0: date3, field1: [date3, date4]}];
+
+    it('match basic values', function() {
+      var filtered = filter.filterItems(items, {field0: date1Copy});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {field0: date10Copy});
+      expect(filtered).to.deep.equal([]);
+
+      // MongoDB does not match dates and their timestamp values.
+      filtered = filter.filterItems(items, {field0: date1.valueOf()});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
     });
 
-    xit('$eq', function() {
+    it('match named subfield values', function() {
+      var filtered = filter.filterItems(items, {'field2.a': date10Copy});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {'field2.a': date1Copy});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {'field2.a': null});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
     });
 
-    xit('$ne', function() {
+    it('$eq', function() {
+      var filtered = filter.filterItems(items, {field0: {'$eq': date1Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {field0: {'$eq': date10Copy}});
+      expect(filtered).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {field1: {'$eq': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$eq': date10Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$eq': null}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
     });
 
-    xit('$lt', function() {
+    it('$ne', function() {
+      var filtered = filter.filterItems(items, {field0: {'$ne': date1Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2, 3]);
+
+      filtered = filter.filterItems(items, {field0: {'$ne': date10Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+
+      filtered = filter.filterItems(items, {field1: {'$ne': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$ne': date1Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
     });
 
-    xit('$lte', function() {
+    it('$lt', function() {
+      var filtered = filter.filterItems(items, {field0: {'$lt': date3Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      filtered = filter.filterItems(items, {field1: {'$lt': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$lt': date11Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {'field1.5': {'$lt': date11Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {field0: {'$lt': date2.valueOf()}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
     });
 
-    xit('$gt', function() {
+    it('$lte', function() {
+      var filtered = filter.filterItems(items, {field0: {'$lte': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      filtered = filter.filterItems(items, {field1: {'$lte': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$lte': date10Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$lte': null}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
+
+      filtered = filter.filterItems(items, {'field1.5': {'$lte': null}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
     });
 
-    xit('$gte', function() {
+    it('$gt', function() {
+      var filtered = filter.filterItems(items, {field0: {'$gt': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
+
+      filtered = filter.filterItems(items, {field1: {'$gt': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2, 3]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$gt': date10Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$gt': null}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {'field1.5': {'$gt': date1Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {field0: {'$gt': date2.valueOf()}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
     });
 
-    xit('$in', function() {
+    it('$gte', function() {
+      var filtered = filter.filterItems(items, {field0: {'$gte': date2Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2, 3]);
+
+      filtered = filter.filterItems(items, {field1: {'$gte': date3Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2, 3]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$gte': date11Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$gte': null}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$gt': null}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {'field1.5': {'$gte': null}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
     });
 
-    xit('$nin', function() {
+    it('$in', function() {
+      var filtered = filter.filterItems(
+        items,
+        {field0: {'$in': [date2Copy, date3Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2, 3]);
+
+      filtered = filter.filterItems(
+        items,
+        {field1: {'$in': [date2Copy, date4Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+
+      filtered = filter.filterItems(items, {'field2.a': {'$in': [null]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
+
+      filtered = filter.filterItems(items, {'field1.5': {'$in': [null]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+    });
+
+    it('$nin', function() {
+      var filtered = filter.filterItems(
+        items,
+        {field0: {'$nin': [date2Copy, date3Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(
+        items,
+        {field1: {'$nin': [date2Copy, date4Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+
+      filtered = filter.filterItems(
+        items,
+        {'field2.a': {'$nin': [date10Copy, date11Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
+
+      filtered = filter.filterItems(
+        items,
+        {'field2.a': {'$nin': [date10Copy, null]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
+
+      filtered = filter.filterItems(items, {'field1.5': {'$nin': [null]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
     });
   });
 });
