@@ -84,6 +84,12 @@ describe('filterItems', function() {
         {'$nor': [{_id: 10}, {field2: 50}]});
       expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
     });
+
+    it('fails with unknown operators', function() {
+      chai.expect(
+        function() { filter.filterItems(items, {'$eq': 2}); })
+        .to.throw('BadValue unknown top level operator: $eq');
+    });
   });
 
   describe('numbers', function() {
