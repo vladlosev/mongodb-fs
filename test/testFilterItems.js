@@ -1,6 +1,8 @@
 var _ = require('lodash')
 var chai = require('chai')
+var mongoose = require('mongoose');
 var path = require('path')
+var bson = require('bson');
 
 var log = require('../lib/log')
 var filter = require('../lib/filter')
@@ -778,6 +780,105 @@ describe('filterItems', function() {
 
       filtered = filter.filterItems(items, {'field1.5': {'$nin': [null]}});
       expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+    });
+  });
+
+  describe('ObjectIds support', function() {
+    var id1 = new bson.ObjectID();
+    var id2 = new bson.ObjectID();
+    var id3 = new bson.ObjectID();
+    var id4 = new bson.ObjectID();
+    var id5 = new bson.ObjectID();
+    var id1Copy = new bson.ObjectID(id1.toString());
+    var id2Copy = new bson.ObjectID(id2.toString());
+    var id3Copy = new bson.ObjectID(id3.toString());
+    var id4Copy = new bson.ObjectID(id4.toString());
+    var id5Copy = new bson.ObjectID(id5.toString());
+
+    var id1DifferentType = mongoose.Types.ObjectId(id1.toHexString());
+    var id3DifferentType = mongoose.Types.ObjectId(id3.toHexString());
+
+    var items = [
+      {_id: 1, id: id1, ids: [id3, id4]},
+      {_id: 2, id: id2, ids: [id4, id5]}];
+
+    it('match basic values', function() {
+      var filtered = filter.filterItems(items, {id: id1Copy});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {id: id3Copy});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {ids: id4Copy});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      if (!(id1DifferentType instanceof bson.ObjectID)) {
+        filtered = filter.filterItems(items, {id: id1DifferentType});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+        filtered = filter.filterItems(items, {ids: id3DifferentType});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+      }
+    });
+
+    it('$eq', function() {
+      var filtered = filter.filterItems(items, {id: {'$eq': id1Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(items, {id: {'$eq': id3Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      filtered = filter.filterItems(items, {ids: {'$eq': id4Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+    });
+
+    it('$ne', function() {
+      var filtered = filter.filterItems(items, {id: {'$ne': id1Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
+
+      filtered = filter.filterItems(items, {id: {'$ne': id5Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      filtered = filter.filterItems(items, {ids: {'$ne': id5Copy}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+    });
+
+    it('$in', function() {
+      var filtered = filter.filterItems(
+        items,
+        {id: {'$in': [id2Copy, id3Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
+
+      filtered = filter.filterItems(
+        items, {ids: {'$in': [id3Copy, id5Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      filtered = filter.filterItems(items, {'ids.5': {'$in': [null]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      if (!(id1DifferentType instanceof bson.ObjectID)) {
+        filtered = filter.filterItems(items, {id: {'$in': [id1DifferentType]}});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+        filtered = filter.filterItems(
+          items,
+          {ids: {'$in': [id3DifferentType]}});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+      }
+    });
+
+    it('$nin', function() {
+      var filtered = filter.filterItems(
+        items,
+        {id: {'$nin': [id2Copy, id3Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+
+      filtered = filter.filterItems(
+        items, {ids: {'$nin': [id3Copy, id5Copy]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+
+      filtered = filter.filterItems(items, {'ids.5': {'$nin': [null]}});
+      expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
     });
   });
 });
