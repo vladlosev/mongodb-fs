@@ -217,6 +217,14 @@ describe('MongoDB-Fs', function() {
         done();
       });
     });
+
+    it('reports invalid queries', function(done) {
+      Item.find({'$eq': 'value24'}, function(err, items) {
+        expect(err).to.match(/BadValue unknown top level operator: [$]eq/);
+        expect(items).to.not.exist;
+        done();
+      });
+    });
   });
 
   describe('find', function() {
