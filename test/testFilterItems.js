@@ -47,6 +47,9 @@ describe('filterItems', function() {
       filtered = filter.filterItems(items,
         {'$and': [{field1: 2}, {_id: 3}]});
       expect(filtered).to.deep.equal([]);
+
+      expect(function() { filter.filterItems(items, {'$and': {a: 2}}); })
+        .to.throw('BadValue $and needs an array');
     });
 
     it('$or', function() {
@@ -65,6 +68,9 @@ describe('filterItems', function() {
       filtered = filter.filterItems(items,
         {'$or': [{_id: 10}, {field2: 50}]});
       expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+      expect(function() { filter.filterItems(items, {'$or': {a: 2}}); })
+        .to.throw('BadValue $or needs an array');
     });
 
     it('$nor', function() {
@@ -83,10 +89,13 @@ describe('filterItems', function() {
       filtered = filter.filterItems(items,
         {'$nor': [{_id: 10}, {field2: 50}]});
       expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+
+      expect(function() { filter.filterItems(items, {'$nor': {a: 2}}); })
+        .to.throw('BadValue $nor needs an array');
     });
 
     it('fails with unknown operators', function() {
-      chai.expect(
+      expect(
         function() { filter.filterItems(items, {'$eq': 2}); })
         .to.throw('BadValue unknown top level operator: $eq');
     });
@@ -270,13 +279,13 @@ describe('filterItems', function() {
     });
 
     it('$all fails with non-array', function() {
-      chai.expect(
+      expect(
         function() { filter.filterItems(items, {field1: {'$all': 2}}); })
         .to.throw('BadValue $all needs an array: 2');
     });
 
     it('$all fails with $ in array', function() {
-      chai.expect(
+      expect(
         function() {
           filter.filterItems(items, {field1: {'$all': [{'$gt': 2}]}});
         }).to.throw("BadValue no $ expressions in $all: [ { '$gt': 2 } ]");
@@ -308,21 +317,21 @@ describe('filterItems', function() {
     });
 
     it('$not fails on non-operators', function() {
-      chai.expect(
+      expect(
         function() { filter.filterItems(items, {_id: {'$not': 2}}); })
         .to.throw("BadValue $not needs a regex or a document");
 
-      chai.expect(
+      expect(
         function() { filter.filterItems(items, {_id: {'$not': [2]}}); })
         .to.throw("BadValue $not needs a regex or a document");
 
-      chai.expect(
+      expect(
         function() { filter.filterItems(items, {_id: {'$not': {b: 2}}}); })
         .to.throw("BadValue unknown operator: b");
     });
 
     it('$not with $regex fails', function() {
-      chai.expect(
+      expect(
         function() {
           filter.filterItems(items, {_id: {'$not': {'$regex': '2'}}});
         }).to.throw("BadValue $not cannot have a regex");
