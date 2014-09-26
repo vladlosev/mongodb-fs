@@ -236,6 +236,30 @@ describe('MongoDB-Fs', function() {
       });
     });
 
+    it('supports skip', function(done) {
+      Item.find({}).skip(1).exec(function (err, items) {
+        expect(err).to.not.exist;
+        expect(_.pluck(items, 'field1')).to.deep.equal(['value11', 'value21']);
+        done();
+      });
+    });
+
+    it('supports limit', function(done) {
+      Item.find({}).limit(2).exec(function (err, items) {
+        expect(err).to.not.exist;
+        expect(_.pluck(items, 'field1')).to.deep.equal(['value1', 'value11']);
+        done();
+      });
+    });
+
+    it('supports skip together with limit', function(done) {
+      Item.find({}).skip(1).limit(1).exec(function (err, items) {
+        expect(err).to.not.exist;
+        expect(_.pluck(items, 'field1')).to.deep.equal(['value11']);
+        done();
+      });
+    });
+
     it('findById', function(done) {
       Item.findOne({field1: 'value1'}, function(err, item) {
         expect(err).to.not.exist;
