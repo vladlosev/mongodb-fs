@@ -111,6 +111,37 @@ describe('filterItems', function() {
         expect(filtered).to.deep.equal([]);
       });
 
+      it('matches array elements implicitly', function() {
+        var filtered = filter.filterItems(items, {field1: 2});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+      });
+
+      it('matches subfields of array elements implicitly', function() {
+        var items = [
+          {_id: 1, field1: [{a: 1}, {a: 2}]},
+          {_id: 2, field1: [{a: 2}, {a: 3}]},
+          {_id: 3, field1: [{a: 5}, {a: 6}, {a: 7}]}];
+        var filtered = filter.filterItems(items, {'field1.a': 2});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+      });
+
+      it('does not match subfields of elements of array elements implicitly',
+        function() {
+          var items = [
+            {_id: 1, field1: [[{a: 1}], [{a: 2}]]},
+            {_id: 2, field1: [[{a: 2}], [{a: 3}]]},
+            {_id: 3, field1: [[{a: 5}], [{a: 6}], [{a: 7}]]}];
+          var filtered = filter.filterItems(items, {'field1.a': 2});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+          items = [
+            {_id: 1, field1: [[{a: 1}, {a: 2}]]},
+            {_id: 2, field1: [[{a: 2}, {a: 3}]]},
+            {_id: 3, field1: [[{a: 5}, {a: 6}, {a: 7}]]}];
+          filtered = filter.filterItems(items, {'field1.a': 2});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+      });
+
       it('matches subfields in dot notation', function() {
         var filtered = filter.filterItems(items, {'field2.a': 10});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
@@ -306,6 +337,34 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {'field1.5': {'$in': [null]}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([]);
       });
+
+      it('matches subfields of array elements implicitly', function() {
+        var items = [
+          {_id: 1, field1: [{a: 1}, {a: 2}]},
+          {_id: 2, field1: [{a: 2}, {a: 3}]},
+          {_id: 3, field1: [{a: 5}, {a: 6}, {a: 7}]}];
+        var filtered = filter.filterItems(items, {'field1.a': {'$in': [1, 3]}});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
+      });
+
+      it('does not match subfields of elements of array elements implicitly',
+        function() {
+          var items = [
+            {_id: 1, field1: [[{a: 1}], [{a: 2}]]},
+            {_id: 2, field1: [[{a: 2}], [{a: 3}]]},
+            {_id: 3, field1: [[{a: 5}], [{a: 6}], [{a: 7}]]}];
+          var filtered = filter.filterItems(
+            items,
+            {'field1.a': {'$in': [1, 3]}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+          items = [
+            {_id: 1, field1: [[{a: 1}, {a: 2}]]},
+            {_id: 2, field1: [[{a: 2}, {a: 3}]]},
+            {_id: 3, field1: [[{a: 5}, {a: 6}, {a: 7}]]}];
+          filtered = filter.filterItems(items, {'field1.a': {'$in': [1, 3]}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+      });
     });
 
     describe('$nin', function() {
@@ -468,6 +527,28 @@ describe('filterItems', function() {
         expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
       });
 
+      it('matches numeric members of array elements with true parameter',
+        function() {
+          var items = [
+            {_id: 1, field1: [{a: 1}, {a: 2}]},
+            {_id: 2, field1: [{a: 2}, {'2': 4}]}];
+          var filtered = filter.filterItems(
+            items,
+            {'field1.2': {'$exists': true}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
+      });
+
+      it('does not match numeric members of array elements with false param',
+        function() {
+          var items = [
+            {_id: 1, field1: [{a: 1}, {a: 2}]},
+            {_id: 2, field1: [{a: 2}, {'2': 4}]}];
+          var filtered = filter.filterItems(
+            items,
+            {'field1.2': {'$exists': false}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
+      });
+
       it('matches non-existing array elements with false parameter', function() {
         var filtered = filter.filterItems(
           items,
@@ -481,6 +562,59 @@ describe('filterItems', function() {
 
         filtered = filter.filterItems(items, {'field2.a': {'$exists': 0}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([3]);
+      });
+
+      it('matches subfields of array elements implicitly', function() {
+        var items = [
+          {_id: 1, field1: [{a: 1}, {a: 2}]},
+          {_id: 2, field1: [{a: 2}, {a: 3}]},
+          {_id: 3, field1: [{a: 5}, {a: 6}, {a: 7}]}];
+
+        var filtered = filter.filterItems(
+          items,
+          {'field1.a': {'$exists': true}});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+
+        filtered = filter.filterItems(items, {'field1.a': {'$exists': false}});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+        filtered = filter.filterItems(items, {'field1.b': {'$exists': true}});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+        filtered = filter.filterItems(items, {'field1.b': {'$exists': false}});
+        expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+      });
+
+      it('does not match subfields of elements of array elements implicitly',
+        function() {
+          var items = [
+            {_id: 1, field1: [[{a: 1}], [{a: 2}]]},
+            {_id: 2, field1: [[{a: 2}], [{a: 3}]]},
+            {_id: 3, field1: [[{a: 5}], [{a: 6}], [{a: 7}]]}];
+          var filtered = filter.filterItems(
+            items,
+            {'field1.a': {'$exists': true}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+          filtered = filter.filterItems(
+            items,
+            {'field1.a': {'$exists': false}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
+
+          items = [
+            {_id: 1, field1: [[{a: 1}, {a: 2}]]},
+            {_id: 2, field1: [[{a: 2}, {a: 3}]]},
+            {_id: 3, field1: [[{a: 5}, {a: 6}, {a: 7}]]}];
+
+          filtered = filter.filterItems(
+            items,
+            {'field1.a': {'$exists': true}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([]);
+
+          filtered = filter.filterItems(
+            items,
+            {'field1.a': {'$exists': false}});
+          expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
       });
     });
 
