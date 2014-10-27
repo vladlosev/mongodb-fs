@@ -41,6 +41,7 @@ dbOptions = {
   server: { poolSize: 1 }
 };
 
+mongoose.model('FreeItem', new mongoose.Schema({any: mongoose.Schema.Types.Mixed}));
 mongoose.model('SimpleItem', new mongoose.Schema({key: String}));
 mongoose.model('ArrayItem', new mongoose.Schema({key: [String], key2: [String]}));
 mongoose.model('DateItem', new mongoose.Schema({date: Date}));
@@ -48,7 +49,7 @@ mongoose.model('DateArrayItem', new mongoose.Schema({date: [Date]}));
 mongoose.model('NumberItem', new mongoose.Schema({key: Number}));
 mongoose.model('ArrayObjectIdItem', new mongoose.Schema({key: [mongoose.Types.ObjectId]}));
 
-var SimpleItem, ArrayItem;
+var FreeItem, SimpleItem, ArrayItem;
 
 describe('MongoDb-Fs in-process operations do not hang', function() {
   var expect = chai.expect;
@@ -65,6 +66,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           mongodbFs.stop(function() { done(err); });
           return;
         }
+        FreeItem = mongoose.connection.model('FreeItem');
         SimpleItem = mongoose.connection.model('SimpleItem');
         ArrayItem = mongoose.connection.model('ArrayItem');
         done();
@@ -157,6 +159,50 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
             .to.have.property('key', 'new value');
           done();
         });
+      });
+    });
+
+    it('replaces fields', function(done) {
+      var id = new mongoose.Types.ObjectId();
+      config.mocks.fakedb.freeitems = [{a: 'value', b: 1, c: 'there', _id: id}];
+      FreeItem.collection.update(
+        {a: 'value'},
+        {a: 'new value', '$inc': {b: 1}},
+        function(err) {
+          if (err) return done(err);
+          expect(config.mocks.fakedb.freeitems)
+            .to.deep.equal([{a: 'new value', b: 2, c: 'there', _id: id}]);
+          done();
+      });
+    });
+
+    it('replaces subfields', function(done) {
+      var id = new mongoose.Types.ObjectId();
+      config.mocks.fakedb.freeitems = [{a: {b: 'value1'}, b: 1, _id: id}];
+      FreeItem.collection.update(
+        {'a.b': 'value1'},
+        {'a.b': 'new value', '$inc': {b: 1}},
+        function(err) {
+          if (err) return done(err);
+          expect(config.mocks.fakedb.freeitems)
+            .to.deep.equal([{a: {b: 'new value'}, b: 2, _id: id}]);
+          done();
+      });
+    });
+
+    it('replaces entire documents', function(done) {
+      var id = new mongoose.Types.ObjectId();
+      config.mocks.fakedb.freeitems = [{a: {b: 'value1', c: 1}, _id: id}];
+      FreeItem.collection.update(
+        {'a.b': 'value1'},
+        {'a.b': 'new value'},
+        function(err) {
+          if (err) return done(err);
+          // The subfield a.c should be gone as the update document does not
+          // specify any operators.
+          expect(config.mocks.fakedb.freeitems)
+            .to.deep.equal([{a: {b: 'new value'}, _id: id}]);
+          done();
       });
     });
 
@@ -340,7 +386,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
   });
 
   describe('count', function() {
-    it('returns the umber of queried documents', function(done) {
+    it('returns the number of queried documents', function(done) {
       config.mocks.fakedb.numberitems = [{key: 1}, {key: 2}, {key: 3}];
       NumberItem = mongoose.connection.model('NumberItem');
       NumberItem.count({key: {$gt: 1}}, function(err, n) {
