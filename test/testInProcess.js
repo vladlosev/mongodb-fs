@@ -394,6 +394,90 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         done();
       });
     });
+
+    describe('upsert', function() {
+      xit('updates existing documents', function(done) {
+      });
+
+      xit('inserts new document when no matches', function(done) {
+      });
+    });
+
+    describe('multi', function() {
+      var id1 = new mongoose.Types.ObjectId();
+      var id2 = new mongoose.Types.ObjectId();
+
+      it('updates single document by default', function(done) {
+        config.mocks.fakedb.freeitems = [
+          {a: 'value', b: 1, _id: id1},
+          {a: 'value', b: 2, _id: id2}];
+        FreeItem.collection.update(
+          {a: 'value'},
+          {'$set': {a: 'new value'}, '$inc': {b: 10}},
+          function(err) {
+            if (err) return done(err);
+            expect(config.mocks.fakedb.freeitems)
+              .to.deep.equal([
+                {a: 'new value', b: 11, _id: id1},
+                {a: 'value', b: 2, _id: id2}]);
+            done();
+        });
+      });
+
+      it('updates single document when set to false', function(done) {
+        config.mocks.fakedb.freeitems = [
+          {a: 'value', b: 1, _id: id1},
+          {a: 'value', b: 2, _id: id2}];
+        FreeItem.collection.update(
+          {a: 'value'},
+          {'$set': {a: 'new value'}, '$inc': {b: 10}},
+          {multi: false},
+          function(err) {
+            if (err) return done(err);
+            expect(config.mocks.fakedb.freeitems)
+              .to.deep.equal([
+                {a: 'new value', b: 11, _id: id1},
+                {a: 'value', b: 2, _id: id2}]);
+            done();
+        });
+      });
+
+      it('updates multiple documents when set to true', function(done) {
+        config.mocks.fakedb.freeitems = [
+          {a: 'value', b: 1, _id: id1},
+          {a: 'value', b: 2, _id: id2}];
+        FreeItem.collection.update(
+          {a: 'value'},
+          {'$set': {a: 'new value'}, '$inc': {b: 10}},
+          {multi: true},
+          function(err) {
+            if (err) return done(err);
+            expect(config.mocks.fakedb.freeitems)
+              .to.deep.equal([
+                {a: 'new value', b: 11, _id: id1},
+                {a: 'new value', b: 12, _id: id2}]);
+            done();
+        });
+      });
+
+      it('rejects update documents with literal fields', function(done) {
+        config.mocks.fakedb.freeitems = [
+          {a: 'value', b: 1, _id: id1},
+          {a: 'value', b: 2, _id: id2}];
+        FreeItem.collection.update(
+          {a: 'value'},
+          {a: 'new value', '$inc': {b: 10}},
+          {multi: true},
+          function(error) {
+            expect(error).to.have.property('ok', false);
+            expect(error).to.have.property('name', 'MongoError');
+            expect(error)
+              .to.have.property('err')
+              .to.have.string("multi update only works with $ operators");
+            done();
+        });
+      });
+    });
   });
 
   describe('count', function() {
