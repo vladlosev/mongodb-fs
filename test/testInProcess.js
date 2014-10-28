@@ -145,20 +145,18 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
   describe('update', function() {
     it('basic', function(done) {
-      config.mocks.fakedb.simpleitems = [
-        {key: 'value1', _id: new mongoose.Types.ObjectId},
-        {key: 'value2', _id: new mongoose.Types.ObjectId}];
-      SimpleItem.findOne({key: 'value1'}, function (err, item) {
-        expect(err).to.not.exist;
-        expect(item).to.exist;
-        item.key = 'new value';
-        item.save(function(err) {
-          expect(err).to.not.exist;
-          expect(config.mocks.fakedb.simpleitems).to.have.length(2);
-          expect(config.mocks.fakedb.simpleitems[0])
+      config.mocks.fakedb.freeitems = [
+      {key: 'value1', _id: new mongoose.Types.ObjectId},
+      {key: 'value2', _id: new mongoose.Types.ObjectId}];
+      FreeItem.collection.update(
+        {key: 'value1'},
+        {'$set': {key: 'new value'}},
+        function(error) {
+          if (error) return done(error);
+          expect(config.mocks.fakedb.freeitems).to.have.length(2);
+          expect(config.mocks.fakedb.freeitems[0])
             .to.have.property('key', 'new value');
           done();
-        });
       });
     });
 
@@ -178,31 +176,44 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('replaces subfields', function(done) {
       var id = new mongoose.Types.ObjectId();
-      config.mocks.fakedb.freeitems = [{a: {b: 'value1'}, b: 1, _id: id}];
+      config.mocks.fakedb.freeitems = [{a: 'value1', b: {c: 1}, _id: id}];
       FreeItem.collection.update(
-        {'a.b': 'value1'},
-        {'a.b': 'new value', '$inc': {b: 1}},
+        {a: 'value1'},
+        {'$set': {'b.c': 42}},
         function(err) {
           if (err) return done(err);
           expect(config.mocks.fakedb.freeitems)
-            .to.deep.equal([{a: {b: 'new value'}, b: 2, _id: id}]);
+            .to.deep.equal([{a: 'value1', b: {c: 42}, _id: id}]);
+          done();
+      });
+    });
+
+    it('rejects subfield literals', function(done) {
+      var id = new mongoose.Types.ObjectId();
+      config.mocks.fakedb.freeitems = [{a: 'value1', b: {c: 1}, _id: id}];
+      FreeItem.collection.update(
+        {a: 'value1'},
+        {'b.c': 42},
+        function(error) {
+          expect(error).to.have.property('ok', false);
+          expect(error).to.have.property('name', 'MongoError');
+          expect(error)
+            .to.have.property('err')
+            .to.have.string("can't have . in field names [b.c]");
           done();
       });
     });
 
     it('replaces entire documents', function(done) {
       var id = new mongoose.Types.ObjectId();
-      config.mocks.fakedb.freeitems = [{a: {b: 'value1', c: 1}, _id: id}];
-      FreeItem.collection.update(
-        {'a.b': 'value1'},
-        {'a.b': 'new value'},
-        function(err) {
-          if (err) return done(err);
-          // The subfield a.c should be gone as the update document does not
-          // specify any operators.
-          expect(config.mocks.fakedb.freeitems)
-            .to.deep.equal([{a: {b: 'new value'}, _id: id}]);
-          done();
+      config.mocks.fakedb.freeitems = [{a: 'value1', b: 1, _id: id}];
+      FreeItem.collection.update({a: 'value1'}, {b: 42}, function(err) {
+        if (err) return done(err);
+        // The subfield a.c should be gone as the update document does not
+        // specify any operators.
+        expect(config.mocks.fakedb.freeitems)
+          .to.deep.equal([{b: 42, _id: id}]);
+        done();
       });
     });
 
