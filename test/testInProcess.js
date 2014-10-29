@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var util = require('util')
   , chai = require('chai')
   , path = require('path')
@@ -93,9 +94,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
   describe('find', function() {
     it('run twice', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
-      SimpleItem.find(function (err, items) {});
-      SimpleItem.find(function (err, items) {
-        expect(err).to.not.exist;
+      SimpleItem.find(function (error, items) {});
+      SimpleItem.find(function (error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(2);
         expect(items[0]).to.have.property('key', 'value1');
         expect(items[1]).to.have.property('key', 'value2');
@@ -107,8 +108,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
   describe('delete', function() {
     it('basic', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
-      SimpleItem.remove({key: 'value1'}, function(err) {
-        expect(err).to.not.exist;
+      SimpleItem.remove({key: 'value1'}, function(error) {
+        if (error) return done(error);
         expect(config.mocks.fakedb.simpleitems).to.have.length(1);
         expect(config.mocks.fakedb.simpleitems[0])
           .to.have.property('key', 'value2');
@@ -118,8 +119,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('by query', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
-      SimpleItem.remove({key: {$ne: 'value1'}}, function(err) {
-        expect(err).to.not.exist;
+      SimpleItem.remove({key: {$ne: 'value1'}}, function(error) {
+        if (error) return done(error);
         expect(config.mocks.fakedb.simpleitems).to.have.length(1);
         expect(config.mocks.fakedb.simpleitems[0])
           .to.have.property('key', 'value1');
@@ -133,8 +134,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('basic', function(done) {
       config.mocks.fakedb.simpleitems = [];
       var item = new SimpleItem({key: 'value'});
-      item.save(function(err) {
-        expect(err).to.not.exist;
+      item.save(function(error) {
+        if (error) return done(error);
         expect(config.mocks.fakedb.simpleitems).to.have.length(1);
         expect(config.mocks.fakedb.simpleitems[0])
           .to.have.property('key', 'value');
@@ -220,12 +221,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('push to array', function(done) {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1']}];
-      ArrayItem.findOne({_id: id}, function (err, item) {
-        expect(err).to.not.exist;
+      ArrayItem.findOne({_id: id}, function (error, item) {
+        if (error) return done(error);
         expect(item).to.have.property('key');
         item.key.push('value2');
-        item.save(function(err) {
-          expect(err).to.not.exist;
+        item.save(function(error) {
+          if (error) return done(error);
           expect(config.mocks.fakedb.arrayitems).to.have.length(1);
           expect(config.mocks.fakedb.arrayitems[0])
             .to.have.property('key')
@@ -252,12 +253,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('array shift', function(done) {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
-      ArrayItem.findOne({_id: id}, function (err, item) {
-        expect(err).to.not.exist;
+      ArrayItem.findOne({_id: id}, function (error, item) {
+        if (error) return done(error);
         expect(item).to.have.property('key');
         item.key.shift();
-        item.save(function(err) {
-          expect(err).to.not.exist;
+        item.save(function(error) {
+          if (error) return done(error);
           expect(config.mocks.fakedb.arrayitems).to.have.length(1);
           expect(config.mocks.fakedb.arrayitems[0])
             .to.have.property('key')
@@ -270,12 +271,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('set array value', function(done) {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
-      ArrayItem.findOne({_id: id}, function (err, item) {
-        expect(err).to.not.exist;
+      ArrayItem.findOne({_id: id}, function (error, item) {
+        if (error) return done(error);
         expect(item).to.have.property('key');
         item.key = ['one', 'two'];
-        item.save(function(err) {
-          expect(err).to.not.exist;
+        item.save(function(error) {
+          if (error) return done(error);
           expect(config.mocks.fakedb.arrayitems).to.have.length(1);
           expect(config.mocks.fakedb.arrayitems[0])
             .to.have.property('key')
@@ -292,12 +293,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.dateitems = [
         {_id: id, date: tenSecondsAgo}];
       var DateItem = mongoose.connection.model('DateItem');
-      DateItem.findOne({_id: id}, function (err, item) {
-        expect(err).to.not.exist;
+      DateItem.findOne({_id: id}, function (error, item) {
+        if (error) return done(error);
         expect(item).to.have.property('date');
         item.date = now;
-        item.save(function(err) {
-          expect(err).to.not.exist;
+        item.save(function(error) {
+          if (error) return done(error);
           expect(config.mocks.fakedb.dateitems).to.have.length(1);
           expect(config.mocks.fakedb.dateitems[0].date.toString())
             .equal(now.toString());
@@ -313,12 +314,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.datearrayitems = [
         {_id: id, date: tenSecondsAgo}];
       var DateArrayItem = mongoose.connection.model('DateArrayItem');
-      DateArrayItem.findOne({_id: id}, function (err, item) {
-        expect(err).to.not.exist;
+      DateArrayItem.findOne({_id: id}, function (error, item) {
+        if (error) return done(error);
         expect(item).to.have.property('date');
         item.date = [now];
-        item.save(function(err) {
-          expect(err).to.not.exist;
+        item.save(function(error) {
+          if (error) return done(error);
           expect(config.mocks.fakedb.datearrayitems).to.have.length(1);
           expect(config.mocks.fakedb.datearrayitems[0])
             .to.have.deep.property('date[0]');
@@ -331,8 +332,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('$pull', function(done) {
       config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
-      ArrayItem.update({}, {$pull: {key: 'value1'}}, function(err) {
-        expect(err).to.not.exist;
+      ArrayItem.update({}, {$pull: {key: 'value1'}}, function(error) {
+        if (error) return done(error);
         expect(config.mocks.fakedb.arrayitems).to.have.length(1);
         expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['value2']});
@@ -345,8 +346,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       var idCopy = new mongoose.Types.ObjectId(id.toString());
       config.mocks.fakedb.arrayobjectiditems = [{key: [id]}];
       ArrayObjectIdItem = mongoose.connection.model('ArrayObjectIdItem');
-      ArrayObjectIdItem.update({}, {$pull: {key: idCopy}}, function(err) {
-        expect(err).to.not.exist;
+      ArrayObjectIdItem.update({}, {$pull: {key: idCopy}}, function(error) {
+        if (error) return done(error);
         expect(config.mocks.fakedb.arrayobjectiditems).to.have.length(1);
         expect(config.mocks.fakedb.arrayobjectiditems[0])
           .to.deep.equal({key: []});
@@ -356,8 +357,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('$pull multiple fields', function(done) {
       config.mocks.fakedb.arrayitems = [{key: ['a', 'b'], key2: ['c', 'd']}];
-      ArrayItem.update({}, {$pull: {key: 'a', key2: 'd'}}, function(err) {
-        expect(err).to.not.exist;
+      ArrayItem.update({}, {$pull: {key: 'a', key2: 'd'}}, function(error) {
+        if (error) return done(error);
         expect(config.mocks.fakedb.arrayitems).to.have.length(1);
         expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['b'], key2: ['c']});
@@ -396,10 +397,115 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     });
 
     describe('upsert', function() {
-      xit('updates existing documents', function(done) {
+      var id1 = new mongoose.Types.ObjectId();
+      var id2 = new mongoose.Types.ObjectId();
+
+      it('updates existing documents', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value', b: 1, _id: id1}];
+        FreeItem.collection.update(
+          {a: 'value'},
+          {'$set': {a: 'new value'}, '$inc': {b: 10}},
+          {upsert: true},
+          function(err) {
+            if (err) return done(err);
+            expect(config.mocks.fakedb.freeitems)
+              .to.deep.equal([{a: 'new value', b: 11, _id: id1}]);
+            done();
+        });
       });
 
-      xit('inserts new document when no matches', function(done) {
+      it('inserts new document when no matches', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', b: 1, _id: id1}];
+        FreeItem.collection.update(
+          {a: 'value2'},
+          {b: 10},
+          {upsert: true},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(2);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: 1, _id: id1});
+            var newDocument = config.mocks.fakedb.freeitems[1];
+            expect(newDocument)
+              .to.have.deep.property('_id.constructor.name', 'ObjectID');
+            expect(newDocument).to.have.property('b', 10);
+            done();
+        });
+      });
+
+      it('uses only update document values if update contains no operators',
+        function(done) {
+          config.mocks.fakedb.freeitems = [{a: 'value1', b: 1, _id: id1}];
+          FreeItem.collection.update(
+            {a: 'value2'},
+            {b: 10, c: 'whatever'},
+            {upsert: true},
+            function(error) {
+              if (error) return done(error);
+              expect(config.mocks.fakedb.freeitems).to.have.length(2);
+              expect(config.mocks.fakedb.freeitems[0])
+                .to.deep.equal({a: 'value1', b: 1, _id: id1});
+              var newDocument = config.mocks.fakedb.freeitems[1];
+              expect(newDocument)
+                .to.have.deep.property('_id.constructor.name', 'ObjectID');
+              expect(_.omit(newDocument, '_id'))
+                .to.deep.equal({b: 10, c: 'whatever'});
+              done();
+          });
+      });
+
+      it('uses update and find document values if update contains operators',
+        function(done) {
+          config.mocks.fakedb.freeitems = [{a: 'value1', b: 1, _id: id1}];
+          FreeItem.collection.update(
+            {a: 'value2', b: {'$gt': 5}},
+            {'$set': {c: 10}, d: 'whatever'},
+            {upsert: true},
+            function(error) {
+              if (error) return done(error);
+              expect(config.mocks.fakedb.freeitems).to.have.length(2);
+              expect(config.mocks.fakedb.freeitems[0])
+                .to.deep.equal({a: 'value1', b: 1, _id: id1});
+              var newDocument = config.mocks.fakedb.freeitems[1];
+              expect(newDocument)
+                .to.have.deep.property('_id.constructor.name', 'ObjectID');
+              // Non-equality comparison should not be a basis for the new
+              // document.
+              expect(_.omit(newDocument, '_id'))
+                .to.deep.equal({a: 'value2', c: 10, d: 'whatever'});
+              done();
+          });
+      });
+
+      it('pulls values from $and conjunctions if update contains operators',
+        function(done) {
+          config.mocks.fakedb.freeitems = [{a: 'value1', b: 1, _id: id1}];
+          FreeItem.collection.update(
+            {'$and': [
+              {a: 'value2', b: 18},
+              {'$and': [{c: 42}, {'d.e': 36}]},
+              {'$or': [{m: 4458}, {n: 5577}]}]},
+            {'$set': {z: 'whatever'}},
+            {upsert: true},
+            function(error) {
+              if (error) return done(error);
+              expect(config.mocks.fakedb.freeitems).to.have.length(2);
+              expect(config.mocks.fakedb.freeitems[0])
+                .to.deep.equal({a: 'value1', b: 1, _id: id1});
+              var newDocument = config.mocks.fakedb.freeitems[1];
+              expect(newDocument)
+                .to.have.deep.property('_id.constructor.name', 'ObjectID');
+              // Equalities under $or should not get transplanted to a new
+              // document, so the result should not contain m or n.
+              expect(_.omit(newDocument, '_id'))
+                .to.deep.equal({
+                  a: 'value2',
+                  b: 18,
+                  c: 42,
+                  d: {e: 36},
+                  z: 'whatever'});
+              done();
+          });
       });
     });
 
@@ -414,8 +520,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         FreeItem.collection.update(
           {a: 'value'},
           {'$set': {a: 'new value'}, '$inc': {b: 10}},
-          function(err) {
-            if (err) return done(err);
+          function(error) {
+            if (error) return done(error);
             expect(config.mocks.fakedb.freeitems)
               .to.deep.equal([
                 {a: 'new value', b: 11, _id: id1},
@@ -432,8 +538,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           {a: 'value'},
           {'$set': {a: 'new value'}, '$inc': {b: 10}},
           {multi: false},
-          function(err) {
-            if (err) return done(err);
+          function(error) {
+            if (error) return done(error);
             expect(config.mocks.fakedb.freeitems)
               .to.deep.equal([
                 {a: 'new value', b: 11, _id: id1},
@@ -450,8 +556,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           {a: 'value'},
           {'$set': {a: 'new value'}, '$inc': {b: 10}},
           {multi: true},
-          function(err) {
-            if (err) return done(err);
+          function(error) {
+            if (error) return done(error);
             expect(config.mocks.fakedb.freeitems)
               .to.deep.equal([
                 {a: 'new value', b: 11, _id: id1},
@@ -484,8 +590,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('returns the number of queried documents', function(done) {
       config.mocks.fakedb.numberitems = [{key: 1}, {key: 2}, {key: 3}];
       NumberItem = mongoose.connection.model('NumberItem');
-      NumberItem.count({key: {$gt: 1}}, function(err, n) {
-        expect(err).to.not.exist;
+      NumberItem.count({key: {$gt: 1}}, function(error, n) {
+        if (error) return done(error);
         expect(n).to.equal(2);
         done();
       });
