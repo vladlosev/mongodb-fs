@@ -509,24 +509,60 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       });
 
       it('does not unpack ObjectIDs when copying from query', function(done) {
-          config.mocks.fakedb.freeitems = [{a: 'value1', _id: id1}];
-          FreeItem.collection.update(
-            {a: 'value2', b: id2},
-            {'$set': {c: 10}},
-            {upsert: true},
-            function(error) {
-              if (error) return done(error);
-              expect(config.mocks.fakedb.freeitems).to.have.length(2);
-              expect(config.mocks.fakedb.freeitems[0])
-                .to.deep.equal({a: 'value1', _id: id1});
-              var newDocument = config.mocks.fakedb.freeitems[1];
-              expect(newDocument)
-                .to.have.deep.property('_id.constructor.name', 'ObjectID');
-              // An ObjectID must be pulled in its entirety and no pulled apart.
-              expect(newDocument).to.have.property('b');
-              expect(newDocument.b.equals(id2)).to.be.true;
-              done();
-          });
+        config.mocks.fakedb.freeitems = [{a: 'value1', _id: id1}];
+        FreeItem.collection.update(
+          {a: 'value2', b: id2},
+          {'$set': {c: 10}},
+          {upsert: true},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(2);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', _id: id1});
+            var newDocument = config.mocks.fakedb.freeitems[1];
+            expect(newDocument)
+              .to.have.deep.property('_id.constructor.name', 'ObjectID');
+            // An ObjectID must be pulled in its entirety and no pulled apart.
+            expect(newDocument).to.have.property('b');
+            expect(newDocument.b.equals(id2)).to.be.true;
+            done();
+        });
+      });
+
+      it('$setOnInsert modifies inserted records', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', _id: id1}];
+        FreeItem.collection.update(
+          {a: 'value2'},
+          {'$setOnInsert': {c: 10}},
+          {upsert: true},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(2);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', _id: id1});
+            var newDocument = config.mocks.fakedb.freeitems[1];
+            expect(newDocument)
+              .to.have.deep.property('_id.constructor.name', 'ObjectID');
+            // An ObjectID must be pulled in its entirety and no pulled apart.
+            expect(_.omit(newDocument, '_id'))
+              .to.deep.equal({a: 'value2', c: 10});
+            done();
+        });
+      });
+
+      it('$setOnInsert does not touch updated records', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', _id: id1}];
+        FreeItem.collection.update(
+          {a: 'value1'},
+          {'$setOnInsert': {c: 10}, '$set': {b: 5}},
+          {upsert: true},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: 5, _id: id1});
+            done();
+        });
       });
     });
 
