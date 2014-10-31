@@ -541,9 +541,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
             expect(config.mocks.fakedb.freeitems[0])
               .to.deep.equal({a: 'value1', _id: id1});
             var newDocument = config.mocks.fakedb.freeitems[1];
-            expect(newDocument)
-              .to.have.deep.property('_id.constructor.name', 'ObjectID');
-            // An ObjectID must be pulled in its entirety and no pulled apart.
+            // $setOnInsert puts its arguments into the new document.
             expect(_.omit(newDocument, '_id'))
               .to.deep.equal({a: 'value2', c: 10});
             done();
@@ -559,6 +557,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           function(error) {
             if (error) return done(error);
             expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            // $setOnInsert's arguments do not apply to existing documents.
             expect(config.mocks.fakedb.freeitems[0])
               .to.deep.equal({a: 'value1', b: 5, _id: id1});
             done();
