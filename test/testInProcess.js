@@ -103,6 +103,19 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         done();
       });
     });
+
+    it('supports $query', function(done) {
+      config.mocks.fakedb.freeitems = [
+      {key: 'value', key2: 2, _id: new mongoose.Types.ObjectId()},
+      {key: 'value', key2: 1, _id: new mongoose.Types.ObjectId()}];
+      FreeItem.collection.find({key: 'value'})
+        .sort({key2: 1})  // Calling sort causes MongoDB client to send $query.
+        .toArray(function(error, results) {
+          if (error) return done(error);
+          expect(results).to.have.length(2);
+          done();
+      });
+    });
   });
 
   describe('delete', function() {
