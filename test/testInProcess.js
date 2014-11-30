@@ -515,6 +515,40 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
             done();
         });
       });
+
+      it('nulls out elements of arrays', function(done) {
+        config.mocks.fakedb.freeitems = [{
+          a: 'value1',
+          b: [1, 2, 3],
+          _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {'b.1': 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: [1, null, 3], _id: id1});
+            done();
+        });
+      });
+
+      it('ignores out-of-index elements of arrays', function(done) {
+        config.mocks.fakedb.freeitems = [{
+          a: 'value1',
+          b: [1, 2, 3],
+          _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {'b.8': 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: [1, 2, 3], _id: id1});
+            done();
+        });
+      });
     });
 
     describe('upsert', function() {
