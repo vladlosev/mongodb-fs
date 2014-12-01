@@ -409,6 +409,148 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       });
     });
 
+    describe('$unset', function() {
+      var id1 = new mongoose.Types.ObjectId();
+
+      it('deletes fields', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', b: 33, _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {b: 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', _id: id1});
+            done();
+        });
+      });
+
+      it('deletes compound fields', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', b: {c: 1}, _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {b: 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', _id: id1});
+            done();
+        });
+      });
+
+      it('deletes subfields', function(done) {
+        config.mocks.fakedb.freeitems = [{
+          a: 'value1',
+          b: {c: 1, d: 2},
+          _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {'b.c': 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: {d: 2}, _id: id1});
+            done();
+        });
+      });
+
+      it('deletes multiple fields', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', b: 33, _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {a: 'value ignored', b: 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({_id: id1});
+            done();
+        });
+      });
+
+      it('ignores non-existing fields', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', b: 33, _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {c: 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: 33, _id: id1});
+            done();
+        });
+      });
+
+      it('ignores non-existing subfields', function(done) {
+        config.mocks.fakedb.freeitems = [{
+          a: 'value1',
+          b: {c: 1, d: {x: 2}},
+          _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {'b.h': 0, 'b.d.y': 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: {c: 1, d: {x: 2}}, _id: id1});
+            done();
+        });
+      });
+
+      it('ignores subfields of non-objects', function(done) {
+        config.mocks.fakedb.freeitems = [{a: 'value1', _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {'a.f': 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', _id: id1});
+            done();
+        });
+      });
+
+      it('nulls out elements of arrays', function(done) {
+        config.mocks.fakedb.freeitems = [{
+          a: 'value1',
+          b: [1, 2, 3],
+          _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {'b.1': 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: [1, null, 3], _id: id1});
+            done();
+        });
+      });
+
+      it('ignores out-of-index elements of arrays', function(done) {
+        config.mocks.fakedb.freeitems = [{
+          a: 'value1',
+          b: [1, 2, 3],
+          _id: id1}];
+        FreeItem.collection.update(
+          {_id: id1},
+          {'$unset': {'b.8': 0}},
+          function(error) {
+            if (error) return done(error);
+            expect(config.mocks.fakedb.freeitems).to.have.length(1);
+            expect(config.mocks.fakedb.freeitems[0])
+              .to.deep.equal({a: 'value1', b: [1, 2, 3], _id: id1});
+            done();
+        });
+      });
+    });
+
     describe('upsert', function() {
       var id1 = new mongoose.Types.ObjectId();
       var id2 = new mongoose.Types.ObjectId();
