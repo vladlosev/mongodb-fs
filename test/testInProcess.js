@@ -249,13 +249,42 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       });
     });
 
-    it('$pushAll to no-array fails', function(done) {
+    it('$pushAll to non-existent field creates array', function(done) {
+      config.mocks.fakedb.arrayitems = [{}];
+      ArrayItem.update({}, {'$pushAll': {key: ['a', 'b']}}, function(err) {
+        if (err) return done(err);
+        expect(config.mocks.fakedb.arrayitems).to.have.length(1);
+        expect(config.mocks.fakedb.arrayitems[0])
+          .to.deep.equal({key: ['a', 'b']});
+        done();
+      });
+    });
+
+    it('$pushAll to non-array fails', function(done) {
+      config.mocks.fakedb.freeitems = [{key: {a: 1}}];
+      FreeItem.collection.update(
+        {},
+        {'$pushAll': {'key': ['a']}},
+        function(err) {
+          expect(err).to.exist;
+          expect(err.ok).to.be.false;
+          expect(err)
+            .to.have.property('err', "The field 'key' must be an array.");
+          expect(config.mocks.fakedb.freeitems).to.have.length(1);
+          expect(config.mocks.fakedb.freeitems[0])
+            .to.deep.equal({key: {a: 1}});
+          done();
+      });
+    });
+
+    it('$pushAll with non-array argument fails', function(done) {
       config.mocks.fakedb.arrayitems = [{key: ['value1', 'value2']}];
-      ArrayItem.update({}, {$pushAll: {'key.1': ['a']}}, function(err) {
+      ArrayItem.update({}, {'$pushAll': {key: 36}}, function(err) {
         expect(err).to.exist;
         expect(err.ok).to.be.false;
         expect(err)
-          .to.have.property('err', "The field 'key.1' must be an array.");
+          .to.have.property('err')
+          .to.contain('$pushAll requires an array of values but was given');
         expect(config.mocks.fakedb.arrayitems).to.have.length(1);
         expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['value1', 'value2']});
