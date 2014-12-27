@@ -13,26 +13,29 @@ describe('projection', function() {
   var id1Copy = new ObjectID(id1);
 
   describe('validateProjection', function() {
+    it('allows falsy value as projection', function() {
+      chai.expect(projection.validateProjection(null))
+        .to.be.ok();
+    });
+
     it('allows pure inclusion projection', function() {
       chai.expect(projection.validateProjection({x: 1, y: 1}))
-        .to.not.exist();
+        .to.be.ok();
     });
 
     it('allows inclusion projection with _id excluded', function() {
       chai.expect(projection.validateProjection({x: 1, _id: 0}))
-        .to.not.exist();
+        .to.be.ok();
     });
 
     it('allows pure inclusion projection', function() {
       chai.expect(projection.validateProjection({x: 0, y: 0}))
-        .to.not.exist();
+        .to.be.ok();
     });
 
     it('disallows mixed inclusion and exclusion', function() {
       chai.expect(projection.validateProjection({x: 1, y: 0}))
-        .to.have.property('message')
-        .to.have.string(
-          'BadValue Projection cannot have a mix of inclusion and exclusion.');
+        .to.be.not.ok();
     });
   });
 

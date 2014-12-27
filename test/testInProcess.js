@@ -922,8 +922,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           expect(error)
             .to.have.property('message')
             .to.have.string(
-              'BadValue Projection cannot have a mix ' +
-              'of inclusion and exclusion.');
+              'You cannot currently mix including and excluding fields');
 
           // The collection must remain unchanged.
           expect(config.mocks.fakedb.freeitems)
