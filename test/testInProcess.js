@@ -870,7 +870,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       });
     });
 
-    xit('returns requested projection of original document', function(done) {
+    it('returns requested projection of original document', function(done) {
       FreeItem.collection.findAndModify(
         {b: 1},
         null,
@@ -896,7 +896,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       });
     });
 
-    xit('returns requested projection of updated document when new is set',
+    it('returns requested projection of updated document when new is set',
       function(done) {
         FreeItem.collection.findAndModify(
           {b: 1},
@@ -908,6 +908,28 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
             expect(item).to.deep.equal({a: 'new value', _id: id1});
             done();
         });
+    });
+
+    it('rejects invalid requested projections', function(done) {
+      FreeItem.collection.findAndModify(
+        {b: 1},
+        null,
+        {'$set': {a: 'new value'}},
+        {fields: {a: 1, b: 0}},
+        function(error) {
+          expect(error).to.have.property('ok', false);
+          expect(error).to.have.property('name', 'MongoError');
+          expect(error)
+            .to.have.property('message')
+            .to.have.string(
+              'BadValue Projection cannot have a mix ' +
+              'of inclusion and exclusion.');
+
+          // The collection must remain unchanged.
+          expect(config.mocks.fakedb.freeitems)
+            .to.deep.equal(originalFreeItems);
+          done();
+      });
     });
 
     it('returns null when document is not found', function(done) {
@@ -930,7 +952,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           expect(error).to.have.property('name', 'MongoError');
           expect(error)
             .to.have.property('message')
-            .to.have.string("need remove or update");
+            .to.have.string('need remove or update');
 
           // The collection must remain unchanged.
           expect(config.mocks.fakedb.freeitems)
@@ -970,7 +992,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           expect(error).to.have.property('name', 'MongoError');
           expect(error)
             .to.have.property('message')
-            .to.have.string("exception: Unknown modifier: a");
+            .to.have.string('exception: Unknown modifier: a');
 
           // The collection must remain unchanged.
           expect(config.mocks.fakedb.freeitems)
@@ -1148,7 +1170,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         });
       });
 
-      xit('returns requested projection of new document upserting and new set',
+      it('returns requested projection of new document with new set',
         function(done) {
           FreeItem.collection.findAndModify(
             {b: 3},
