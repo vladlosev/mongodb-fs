@@ -43,6 +43,6 @@
   "devDependencies": {
     "mocha": "~1.21.4",
     "mongoose": "~3.8.18",
-    "chai": "~1.9.1"
+    "chai": "~1.10.0"
   }
 }
