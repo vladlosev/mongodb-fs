@@ -269,31 +269,34 @@ describe('MongoDB-Fs', function() {
     });
 
     it('findById', function(done) {
-      Item.findOne({field1: 'value1'}, function(err, item) {
-        expect(err).to.not.exist;
+      Item.findOne({field1: 'value1'}, function(error, item) {
+        if (error) return done(error);
         expect(item).to.have.property('id');
         logger.trace('item :', item);
         var itemId = item.id;
         logger.trace('itemId :', itemId);
-        Item.findById(itemId, function(err, item) {
-          expect(err).to.not.exist;
+        Item.findById(itemId, function(error, item) {
+          if (error) return done(error);
           expect(item).to.not.be.empty;
           done();
         });
       });
     });
 
-    xit('findByIdAndUpdate', function(done) {
-      Item.findOne({field1: 'value1'}, function(err, item) {
-        expect(err).to.not.exist;
+    it('findByIdAndUpdate', function(done) {
+      Item.findOne({field1: 'value1'}, function(error, item) {
+        if (error) return done(error);
         expect(item).to.have.property('id');
         logger.trace('item :', item);
         var itemId = item.id;
         logger.trace('itemId :', itemId);
-        Item.findByIdAndUpdate(itemId, {field1: 'value1Modified'}, function(err, item) {
-          expect(err).to.not.exist;
-          expect(item).to.not.be.empty;
-          expect(item).to.have.property('field1', 'value1Modified');
+        Item.findByIdAndUpdate(
+          itemId,
+          {'$set': {field1: 'value1Modified'}},
+          function(error, item) {
+            if (error) return done(error);
+            expect(item).to.have.property('field1', 'value1Modified');
+            done();
         });
       });
     });
