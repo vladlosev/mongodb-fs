@@ -92,6 +92,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
   });
 
   describe('find', function() {
+    var id1 = new mongoose.Types.ObjectId();
+    var id2 = new mongoose.Types.ObjectId();
+
     it('run twice', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
       SimpleItem.find(function (error, items) {});
@@ -106,14 +109,42 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('supports $query', function(done) {
       config.mocks.fakedb.freeitems = [
-      {key: 'value', key2: 2, _id: new mongoose.Types.ObjectId()},
-      {key: 'value', key2: 1, _id: new mongoose.Types.ObjectId()}];
+        {key: 'value', key2: 2, _id: id2},
+        {key: 'value', key2: 1, _id: id1}];
       FreeItem.collection.find({key: 'value'})
         .sort({key2: 1})  // Calling sort causes MongoDB client to send $query.
         .toArray(function(error, results) {
           if (error) return done(error);
           expect(results).to.have.length(2);
           done();
+      });
+    });
+
+    it('returns requested projection', function(done) {
+      config.mocks.fakedb.freeitems = [
+        {key: 'value', key2: {a: 'b'}, _id: id2},
+        {key: 'value', key2: {a: 'c'}, _id: id1}
+      ];
+      FreeItem.collection.find({key: 'value'}, {'key2.a': 1}).toArray(
+        function(error, results) {
+          if (error) return done(error);
+
+          expect(results).to.have.length(2);
+          expect(_.omit(results[0], '_id')).to.deep.equal({key2: {a: 'b'}});
+          expect(_.omit(results[1], '_id')).to.deep.equal({key2: {a: 'c'}});
+          done();
+      });
+    });
+
+    it('rejects invalid requested projections', function(done) {
+      FreeItem.collection.find({b: 1}, {a: 1, b: 0}).toArray(function(error) {
+        expect(error).to.have.property('name', 'MongoError');
+        expect(error)
+          .to.have.property('message')
+          .to.have.string(
+            'BadValue Projection cannot have ' +
+            'a mix of inclusion and exclusion.');
+        done();
       });
     });
   });
