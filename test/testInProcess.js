@@ -1253,6 +1253,19 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       });
     });
 
+    it('finds distinct compound values', function(done) {
+      config.mocks.fakedb.freeitems = [
+        {a: {b: 'x'}, c: 1},
+        {a: {b: 'y'}},
+        {a: ['x', 42]}
+      ];
+      FreeItem.collection.distinct('a', function(error, values) {
+        if (error) return done(error);
+        expect(values).to.deep.equal([{b: 'x'}, {b: 'y'}, ['x', 42]]);
+        done();
+      });
+    });
+
     it('supports filtering', function(done) {
       config.mocks.fakedb.freeitems = [{key: 1}, {key: 2}, {key: 3}];
       FreeItem.collection.distinct(
