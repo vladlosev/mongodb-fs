@@ -44,17 +44,17 @@ mongodbFs.init({
   }
 });
 
-mongodbFs.start(function (err) {
-  mongoose.connect('mongodb://localhost:27027/fakedb', { server: { poolSize: 1 } }, function (err) {
+mongodbFs.start(function(err) {
+  mongoose.connect('mongodb://localhost:27027/fakedb', { server: { poolSize: 1 } }, function(err) {
     // Usual mongoose code to retreive all the contacts
     var Contact;
     Contact = mongoose.connection.model('Contact');
-    Contact.find(function (err, contacts) {
+    Contact.find(function(err, contacts) {
       //
       console.log('contacts :', contacts);
       //
-      mongoose.disconnect(function (err) { // clean death
-        mongodbFs.stop(function (err) {
+      mongoose.disconnect(function(err) { // clean death
+        mongodbFs.stop(function(err) {
           console.log('bye!');
         });
       });

@@ -97,8 +97,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('run twice', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
-      SimpleItem.find(function (error, items) {});
-      SimpleItem.find(function (error, items) {
+      SimpleItem.find(function(error, items) {});
+      SimpleItem.find(function(error, items) {
         if (error) return done(error);
         expect(items).to.have.length(2);
         expect(items[0]).to.have.property('key', 'value1');
@@ -265,7 +265,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('push to array', function(done) {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1']}];
-      ArrayItem.findOne({_id: id}, function (error, item) {
+      ArrayItem.findOne({_id: id}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('key');
         item.key.push('value2');
@@ -329,7 +329,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.arrayitems = [
         {_id: id, __v: 0, key: ['value1', 'value2']}
       ];
-      ArrayItem.findOne({_id: id}, function (error, item) {
+      ArrayItem.findOne({_id: id}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('key');
         item.key.shift();
@@ -347,7 +347,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('set array value', function(done) {
       var id = new mongoose.Types.ObjectId;
       config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
-      ArrayItem.findOne({_id: id}, function (error, item) {
+      ArrayItem.findOne({_id: id}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('key');
         item.key = ['one', 'two'];
@@ -369,7 +369,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.dateitems = [
         {_id: id, date: tenSecondsAgo}];
       var DateItem = mongoose.connection.model('DateItem');
-      DateItem.findOne({_id: id}, function (error, item) {
+      DateItem.findOne({_id: id}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('date');
         item.date = now;
@@ -390,7 +390,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.datearrayitems = [
         {_id: id, date: tenSecondsAgo}];
       var DateArrayItem = mongoose.connection.model('DateArrayItem');
-      DateArrayItem.findOne({_id: id}, function (error, item) {
+      DateArrayItem.findOne({_id: id}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('date');
         item.date = [now];
@@ -460,7 +460,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}];
       SimpleItem.update(
         {key: 'value1'},
-        {$set: {'key.k2.k3': 5 }}, function (err, item) {
+        {$set: {'key.k2.k3': 5 }}, function(err, item) {
         expect(err).to.exist;
         expect(err.ok).to.be.false;
         expect(err)
