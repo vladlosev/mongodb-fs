@@ -315,7 +315,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
         expect(err.ok).to.be.false;
         expect(err)
           .to.have.property('err')
-          .to.contain('$pushAll requires an array of values but was given');
+          .to.contain(
+            '$pushAll requires an array of values but was given an String');
         expect(config.mocks.fakedb.arrayitems).to.have.length(1);
         expect(config.mocks.fakedb.arrayitems[0])
           .to.deep.equal({key: ['value1', 'value2']});
@@ -325,7 +326,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('array shift', function(done) {
       var id = new mongoose.Types.ObjectId;
-      config.mocks.fakedb.arrayitems = [{_id: id, __v: 0, key: ['value1', 'value2']}];
+      config.mocks.fakedb.arrayitems = [
+        {_id: id, __v: 0, key: ['value1', 'value2']}
+      ];
       ArrayItem.findOne({_id: id}, function (error, item) {
         if (error) return done(error);
         expect(item).to.have.property('key');
