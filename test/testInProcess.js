@@ -149,7 +149,7 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     });
   });
 
-  describe('delete', function() {
+  describe('remove', function() {
     it('basic', function(done) {
       config.mocks.fakedb.simpleitems = [{key: 'value1'}, {key: 'value2'}];
       SimpleItem.remove({key: 'value1'}, function(error) {
@@ -1225,6 +1225,82 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       NumberItem.count({key: {$gt: 1}}, function(error, n) {
         if (error) return done(error);
         expect(n).to.equal(2);
+        done();
+      });
+    });
+  });
+
+  describe('distinct', function() {
+    it('finds distinct field values', function(done) {
+      config.mocks.fakedb.freeitems = [{key: 1}, {key: 2}, {key: 3}, {key2: 4}];
+      FreeItem.collection.distinct('key', function(error, values) {
+        if (error) return done(error);
+        expect(values).to.deep.equal([1, 2, 3]);
+        done();
+      });
+    });
+
+    it('finds distinct subfiled values', function(done) {
+      config.mocks.fakedb.freeitems = [
+        {a: {b: 'x'}, c: 1},
+        {a: {b: 'y'}},
+        {a: {c: 'z'}}
+      ];
+      FreeItem.collection.distinct('a.b', function(error, values) {
+        if (error) return done(error);
+        expect(values).to.deep.equal(['x', 'y']);
+        done();
+      });
+    });
+
+    it('finds distinct compound values', function(done) {
+      config.mocks.fakedb.freeitems = [
+        {a: {b: 'x'}, c: 1},
+        {a: {b: 'y'}},
+        {a: ['x', 42]}
+      ];
+      FreeItem.collection.distinct('a', function(error, values) {
+        if (error) return done(error);
+        expect(values).to.deep.equal([{b: 'x'}, {b: 'y'}, ['x', 42]]);
+        done();
+      });
+    });
+
+    it('supports filtering', function(done) {
+      config.mocks.fakedb.freeitems = [{key: 1}, {key: 2}, {key: 3}];
+      FreeItem.collection.distinct(
+        'key',
+        {key: {'$gt': 1}},
+        function(error, values) {
+          if (error) return done(error);
+          expect(values).to.deep.equal([2, 3]);
+          done();
+        });
+    });
+
+    it('handles empty collection', function(done) {
+      config.mocks.fakedb.freeitems = [];
+      FreeItem.collection.distinct('key', function(error, values) {
+        if (error) return done(error);
+        expect(values).to.deep.equal([]);
+        done();
+      });
+    });
+
+    it('returns empty array if field parameter is invalid', function(done) {
+      config.mocks.fakedb.freeitems = [{key: 1}, {key: 2}, {key: 3}];
+      FreeItem.collection.distinct(42, function(error, values) {
+        if (error) return done(error);
+        expect(values).to.deep.equal([]);
+        done();
+      });
+    });
+
+    it('ignores invalid query parameter', function(done) {
+      config.mocks.fakedb.freeitems = [{key: 1}, {key: 2}, {key: 3}];
+      FreeItem.collection.distinct('key', 3, function(error, values) {
+        if (error) return done(error);
+        expect(values).to.deep.equal([1, 2, 3]);
         done();
       });
     });
