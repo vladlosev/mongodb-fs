@@ -229,7 +229,7 @@ describe('MongoDB-Fs', function() {
 
   describe('find', function() {
     it('finds all documents', function(done) {
-      Item.find(function (err, items) {
+      Item.find(function(err, items) {
         expect(err).to.not.exist;
         expect(items).to.have.length(3);
         done();
@@ -245,7 +245,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('supports skip', function(done) {
-      Item.find({}).skip(1).exec(function (err, items) {
+      Item.find({}).skip(1).exec(function(err, items) {
         expect(err).to.not.exist;
         expect(_.pluck(items, 'field1')).to.deep.equal(['value11', 'value21']);
         done();
@@ -253,7 +253,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('supports limit', function(done) {
-      Item.find({}).limit(2).exec(function (err, items) {
+      Item.find({}).limit(2).exec(function(err, items) {
         expect(err).to.not.exist;
         expect(_.pluck(items, 'field1')).to.deep.equal(['value1', 'value11']);
         done();
@@ -261,7 +261,7 @@ describe('MongoDB-Fs', function() {
     });
 
     it('supports skip together with limit', function(done) {
-      Item.find({}).skip(1).limit(1).exec(function (err, items) {
+      Item.find({}).skip(1).limit(1).exec(function(err, items) {
         expect(err).to.not.exist;
         expect(_.pluck(items, 'field1')).to.deep.equal(['value11']);
         done();
