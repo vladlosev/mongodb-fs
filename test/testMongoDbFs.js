@@ -261,9 +261,7 @@ describe('MongoDB-Fs', function() {
       Item.findOne({field1: 'value1'}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('id');
-        logger.debug('item :', item);
         var itemId = item.id;
-        logger.debug('itemId :', itemId);
         Item.findById(itemId, function(error, item) {
           if (error) return done(error);
           expect(item).to.not.be.empty;
@@ -276,9 +274,7 @@ describe('MongoDB-Fs', function() {
       Item.findOne({field1: 'value1'}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('id');
-        logger.debug('item :', item);
         var itemId = item.id;
-        logger.debug('itemId :', itemId);
         Item.findByIdAndUpdate(
           itemId,
           {'$set': {field1: 'value1Modified'}},
