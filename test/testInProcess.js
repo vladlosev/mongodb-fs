@@ -1,31 +1,25 @@
 var _ = require('lodash');
-var util = require('util')
-  , chai = require('chai')
-  , path = require('path')
-  , mongodbFs = require('../lib/mongodb-fs')
-  , mongoose = require('mongoose')
-  , log = require('../lib/log')
-  , config, logger, schema, dbConfig, dbOptions, SimpleItem, Unknown;
+var chai = require('chai');
+var mongoose = require('mongoose');
+var path = require('path');
+var util = require('util');
+var logger = require('winston');
+
+var mongodbFs = require('../lib/mongodb-fs');
 
 var logLevel = process.env.LOG_LEVEL || 'warn';
+logger.level = logLevel;
 
-config = {
+var config = {
   port: 27027,
   mocks: {fakedb: {}},
-  log: {level: logLevel}
+  log: {logger: logger}
 };
 
-log.init(config.log);
-logger = log.getLogger();
-
-dbConfig = {
-  name: 'fakedb'
-};
+var dbConfig = {name: 'fakedb'};
 dbConfig.url = util.format('mongodb://localhost:%d/%s', config.port, dbConfig.name);
 
-dbOptions = {
-  server: { poolSize: 1 }
-};
+var dbOptions = {server: {poolSize: 1}};
 
 mongoose.model('FreeItem', new mongoose.Schema({any: mongoose.Schema.Types.Mixed}));
 mongoose.model('SimpleItem', new mongoose.Schema({key: String}));
@@ -35,7 +29,7 @@ mongoose.model('DateArrayItem', new mongoose.Schema({date: [Date]}));
 mongoose.model('NumberItem', new mongoose.Schema({key: Number}));
 mongoose.model('ArrayObjectIdItem', new mongoose.Schema({key: [mongoose.Types.ObjectId]}));
 
-var FreeItem, SimpleItem, ArrayItem;
+var FreeItem, SimpleItem, ArrayItem, Unknown;
 
 describe('MongoDb-Fs in-process operations do not hang', function() {
   var expect = chai.expect;
