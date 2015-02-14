@@ -7,27 +7,12 @@ var util = require('util')
   , log = require('../lib/log')
   , config, logger, schema, dbConfig, dbOptions, SimpleItem, Unknown;
 
-var logLevel = process.env.LOG_LEVEL || 'WARN';
+var logLevel = process.env.LOG_LEVEL || 'warn';
 
 config = {
   port: 27027,
-  mocks: {
-    fakedb: {
-    }
-  },
-  fork: false,
-  log: {
-    log4js: {
-      appenders: [
-        {
-          type: 'console',
-          category: path.basename(__filename)
-        }
-      ]
-    },
-    category: path.basename(__filename),
-    level: logLevel
-  }
+  mocks: {fakedb: {}},
+  log: {level: logLevel}
 };
 
 log.init(config.log);
@@ -57,11 +42,12 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
   before(function(done) {
     mongodbFs.init(config);
-    logger.trace('init');
+    logger.info('Starting fake server...');
     mongodbFs.start(function(err) {
       if (err) return done(err);
-      logger.trace('connect to db');
-      mongoose.set('debug', logLevel === 'TRACE');
+
+      mongoose.set('debug', logLevel === 'debug' || logLevel === 'trace');
+      logger.info('Connecting...');
       mongoose.connect(dbConfig.url, dbOptions, function(err) {
         if (err) {
           mongodbFs.stop(function() { done(err); });
@@ -76,8 +62,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
   });
 
   after(function(done) {
-    logger.trace('disconnect');
+    logger.info('Disconnecting...');
     mongoose.disconnect(function() {
+      logger.info('Stopping fake server...');
       mongodbFs.stop(done);
     });
   });
