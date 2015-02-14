@@ -18,6 +18,12 @@ mongodbFs.init({
         {firstName: 'Forrest', lastName: 'Gump'}
       ]
     }
+  },
+  log: {
+    // 'warn' is default; specify 'info' or 'debug' to see more info.
+    // Or you may specify the `logger` property us pass in your own logger.
+    // But never, ever specify 'trace' here.
+    level: 'warn'
   }
 });
 
