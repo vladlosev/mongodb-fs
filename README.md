@@ -41,7 +41,7 @@ mongodbFs.init({
   },
   log: {
     // 'warn' is default; specify 'info' or 'debug' to see more info.
-    // Or you may specify the `logger` property us pass in your own logger.
+    // Or you may specify the `logger` property to pass in your own logger.
     // But never, ever specify 'trace' here.
     level: 'warn'
   }
