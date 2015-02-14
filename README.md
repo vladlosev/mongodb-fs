@@ -52,20 +52,20 @@ mongodbFs.start(function (err) {
   mongoose.connect('mongodb://localhost:27027/fakedb', // 'fakedb' should be available in mocks
     {server: {poolSize: 1}}, // usual options
     function (err) {
-    // Usual mongoose code to retreive all the contacts
-    var Contact;
-    Contact = mongoose.connection.model('Contact');
-    Contact.find(function (err, contacts) {
-      //
-      console.log('contacts :', contacts);
-      //
-      mongoose.disconnect(function (err) { // clean death
-        mongodbFs.stop(function (err) {
-          console.log('bye!');
+      // Usual mongoose code to retreive all the contacts
+      var Contact;
+      Contact = mongoose.connection.model('Contact');
+      Contact.find(function (err, contacts) {
+        //
+        console.log('contacts :', contacts);
+        //
+        mongoose.disconnect(function (err) { // clean death
+          mongodbFs.stop(function (err) {
+            console.log('bye!');
+          });
         });
       });
     });
-  });
 });
 
 ```
