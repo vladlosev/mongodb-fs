@@ -1,20 +1,22 @@
 var _ = require('lodash');
 var chai = require('chai');
+var log4js = require('log4js');
 var mongoose = require('mongoose');
 var path = require('path');
 var util = require('util');
-var logger = require('winston');
 
 var mongodbFs = require('../lib/mongodb-fs');
 
 var logLevel = process.env.LOG_LEVEL || 'warn';
-logger.level = logLevel;
 
 var config = {
   port: 27027,
   mocks: {fakedb: {}},
-  log: {logger: logger}
+  log: {level: logLevel}
 };
+
+var logger = log4js.getLogger(path.basename(__filename).replace(/[.]js$/, ''));
+logger.setLevel(logLevel);
 
 var dbConfig = {name: 'fakedb'};
 dbConfig.url = util.format('mongodb://localhost:%d/%s', config.port, dbConfig.name);

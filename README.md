@@ -40,10 +40,17 @@ mongodbFs.init({
     }
   },
   log: {
-    // 'warn' is default; specify 'info' or 'debug' to see more info.
-    // Or you may specify the `logger` property to pass in your own logger.
-    // But never, ever specify 'trace' here.
-    level: 'warn'
+    // 'warn' is default; specify 'info' or 'debug' to see more info.  But
+    // never, ever specify 'trace' here.  Default is 'warn'.
+    level: 'warn',
+    // Optional log4js category to use when logging events.  A trailing period
+    // instructs individual modules to append their module names to the
+    // category.  Default is 'mongodb-fs.'
+    category: 'mongodb-fs',
+    // You may supply your own logger to use instead of a default one.  The
+    // logger must implement the following methods: error, warn, info, debug,
+    // trace.
+    logger: undefined
   }
 });
 

@@ -1,23 +1,26 @@
-var util = require('util')
-  , _ = require('lodash')
-  , chai = require('chai')
-  , path = require('path')
-  , mongodbFs = require('../lib/mongodb-fs')
-  , mongoose = require('mongoose')
-  , log = require('../lib/log')
-  , mocks = require('./mocks')
-  , config, schema, dbConfig, dbOptions, Item, Unknown;
+var _ = require('lodash');
+var chai = require('chai');
+var log4js = require('log4js');
+var mongodbFs = require('../lib/mongodb-fs');
+var mongoose = require('mongoose');
+var path = require('path');
+var util = require('util');
+
+var mocks = require('./mocks');
+
+var config, schema, dbConfig, dbOptions, Item, Unknown;
 
 var logLevel = process.env.LOG_LEVEL || 'warn';
 
 config = {
   port: 27027,
   mocks: {fakedb: {items: []}},
+  log: {level: logLevel},
   fork: true
 };
 
-log.init(config.log);
-var logger = log.getLogger();
+var logger = log4js.getLogger(path.basename(__filename).replace(/[.]js$/, ''));
+logger.setLevel(logLevel);
 
 schema = {
   field1: String,
