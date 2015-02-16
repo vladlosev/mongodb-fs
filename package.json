@@ -37,12 +37,12 @@
   },
   "dependencies": {
     "bson": "0.2.15",
-    "log4js": "0.6.6",
-    "lodash": "~2.4.1"
+    "lodash": "~2.4.1",
+    "log4js": "~0.6.22"
   },
   "devDependencies": {
+    "chai": "~1.10.0",
     "mocha": "~1.21.4",
-    "mongoose": "~3.8.18",
-    "chai": "~1.10.0"
+    "mongoose": "~3.8.18"
   }
 }

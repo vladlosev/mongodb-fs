@@ -13,11 +13,6 @@ mongodbFs.init({
     fakedb: {
       mymodels: []
     }
-  },
-  fork: true,
-  log: {
-    category: path.basename(__filename),
-    level: 'TRACE'
   }
 });
 

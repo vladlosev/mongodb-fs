@@ -34,55 +34,45 @@ mongodbFs.init({
   mocks: { // The all database is here...
     fakedb: { // database name
       contacts: [ // a collection
-        {
-          firstName: 'John',
-          lastName: 'Doe'
-        },
-        {
-          firstName: 'Forrest',
-          lastName: 'Gump'
-        }
+        {firstName: 'John', lastName: 'Doe'},
+        {firstName: 'Forrest', lastName: 'Gump'}
       ]
     }
   },
-  // Additionnal options
-  fork: true,         // force the server to run in a separate process (default: false)
-  // fork is useful to deal with async hell (client and server in same main-loop)
-  //
-  // Log optionnal configuration :
   log: {
-    log4js: {         // log4js configuration
-      appenders: [    // log4js appenders declaration (see log4js project for more informations)
-        {
-          type: 'console',
-          category: path.basename(__filename)
-        }
-      ]
-    },
-    category: path.basename(__filename), // category used for logger
-    level: 'INFO'                        // log level
+    // 'warn' is default; specify 'info' or 'debug' to see more info.  But
+    // never, ever specify 'trace' here.  Default is 'warn'.
+    level: 'warn',
+    // Optional log4js category to use when logging events.  A trailing period
+    // instructs individual modules to append their module names to the
+    // category.  Default is 'mongodb-fs.'
+    category: 'mongodb-fs',
+    // You may supply your own logger to use instead of a default one.  The
+    // logger must implement the following methods: error, warn, info, debug,
+    // trace.
+    logger: undefined
   }
 });
 
 // Start the fake server
 mongodbFs.start(function (err) {
   mongoose.connect('mongodb://localhost:27027/fakedb', // 'fakedb' should be available in mocks
-    { server: { poolSize: 1 } }, // usual options
+    {server: {poolSize: 1}}, // usual options
     function (err) {
-    // Usual mongoose code to retreive all the contacts
-    var Contact;
-    Contact = mongoose.connection.model('Contact');
-    Contact.find(function (err, contacts) {
-      //
-      console.log('contacts :', contacts);
-      //
-      mongoose.disconnect(function (err) { // clean death
-        mongodbFs.stop(function (err) {
-          console.log('bye!');
+      // Usual mongoose code to retreive all the contacts
+      var Contact;
+      Contact = mongoose.connection.model('Contact');
+      Contact.find(function (err, contacts) {
+        //
+        console.log('contacts :', contacts);
+        //
+        mongoose.disconnect(function (err) { // clean death
+          mongodbFs.stop(function (err) {
+            console.log('bye!');
+          });
         });
       });
     });
-  });
 });
 
 ```

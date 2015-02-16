@@ -1,46 +1,27 @@
 var _ = require('lodash');
-var util = require('util')
-  , chai = require('chai')
-  , path = require('path')
-  , mongodbFs = require('../lib/mongodb-fs')
-  , mongoose = require('mongoose')
-  , log = require('../lib/log')
-  , config, logger, schema, dbConfig, dbOptions, SimpleItem, Unknown;
+var chai = require('chai');
+var log4js = require('log4js');
+var mongoose = require('mongoose');
+var path = require('path');
+var util = require('util');
 
-var logLevel = process.env.LOG_LEVEL || 'WARN';
+var mongodbFs = require('../lib/mongodb-fs');
 
-config = {
+var logLevel = process.env.LOG_LEVEL || 'warn';
+
+var config = {
   port: 27027,
-  mocks: {
-    fakedb: {
-    }
-  },
-  fork: false,
-  log: {
-    log4js: {
-      appenders: [
-        {
-          type: 'console',
-          category: path.basename(__filename)
-        }
-      ]
-    },
-    category: path.basename(__filename),
-    level: logLevel
-  }
+  mocks: {fakedb: {}},
+  log: {level: logLevel}
 };
 
-log.init(config.log);
-logger = log.getLogger();
+var logger = log4js.getLogger(path.basename(__filename).replace(/[.]js$/, ''));
+logger.setLevel(logLevel);
 
-dbConfig = {
-  name: 'fakedb'
-};
+var dbConfig = {name: 'fakedb'};
 dbConfig.url = util.format('mongodb://localhost:%d/%s', config.port, dbConfig.name);
 
-dbOptions = {
-  server: { poolSize: 1 }
-};
+var dbOptions = {server: {poolSize: 1}};
 
 mongoose.model('FreeItem', new mongoose.Schema({any: mongoose.Schema.Types.Mixed}));
 mongoose.model('SimpleItem', new mongoose.Schema({key: String}));
@@ -50,18 +31,19 @@ mongoose.model('DateArrayItem', new mongoose.Schema({date: [Date]}));
 mongoose.model('NumberItem', new mongoose.Schema({key: Number}));
 mongoose.model('ArrayObjectIdItem', new mongoose.Schema({key: [mongoose.Types.ObjectId]}));
 
-var FreeItem, SimpleItem, ArrayItem;
+var FreeItem, SimpleItem, ArrayItem, Unknown;
 
 describe('MongoDb-Fs in-process operations do not hang', function() {
   var expect = chai.expect;
 
   before(function(done) {
     mongodbFs.init(config);
-    logger.trace('init');
+    logger.info('Starting fake server...');
     mongodbFs.start(function(err) {
       if (err) return done(err);
-      logger.trace('connect to db');
-      mongoose.set('debug', logLevel === 'TRACE');
+
+      mongoose.set('debug', logLevel === 'debug' || logLevel === 'trace');
+      logger.info('Connecting...');
       mongoose.connect(dbConfig.url, dbOptions, function(err) {
         if (err) {
           mongodbFs.stop(function() { done(err); });
@@ -76,8 +58,9 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
   });
 
   after(function(done) {
-    logger.trace('disconnect');
+    logger.info('Disconnecting...');
     mongoose.disconnect(function() {
+      logger.info('Stopping fake server...');
       mongodbFs.stop(done);
     });
   });

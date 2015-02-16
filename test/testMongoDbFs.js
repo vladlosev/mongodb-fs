@@ -1,35 +1,26 @@
-var util = require('util')
-  , _ = require('lodash')
-  , chai = require('chai')
-  , path = require('path')
-  , mongodbFs = require('../lib/mongodb-fs')
-  , mongoose = require('mongoose')
-  , log = require('../lib/log')
-  , mocks = require('./mocks')
-  , config, logger, schema, dbConfig, dbOptions, Item, Unknown;
+var _ = require('lodash');
+var chai = require('chai');
+var log4js = require('log4js');
+var mongodbFs = require('../lib/mongodb-fs');
+var mongoose = require('mongoose');
+var path = require('path');
+var util = require('util');
 
-var logLevel = process.env.LOG_LEVEL || 'WARN';
+var mocks = require('./mocks');
+
+var config, schema, dbConfig, dbOptions, Item, Unknown;
+
+var logLevel = process.env.LOG_LEVEL || 'warn';
 
 config = {
   port: 27027,
   mocks: {fakedb: {items: []}},
-  fork: true,
-  log: {
-    log4js: {
-      appenders: [
-        {
-          type: 'console',
-          category: path.basename(__filename)
-        }
-      ]
-    },
-    category: path.basename(__filename),
-    level: logLevel
-  }
+  log: {level: logLevel},
+  fork: true
 };
 
-log.init(config.log);
-logger = log.getLogger();
+var logger = log4js.getLogger(path.basename(__filename).replace(/[.]js$/, ''));
+logger.setLevel(logLevel);
 
 schema = {
   field1: String,
@@ -57,11 +48,11 @@ describe('MongoDB-Fs', function() {
 
   before(function(done) {
     mongodbFs.init(config);
-    mongoose.set('debug', logLevel === 'TRACE');
-    logger.trace('init');
+    mongoose.set('debug', logLevel === 'debug' || logLevel === 'trace');
+    logger.info('Starting fake server...');
     mongodbFs.start(function(err) {
       if (err) return done(err);
-      logger.trace('connect to db');
+      logger.info('Connecting...');
       mongoose.connect(dbConfig.url, dbOptions, function(err) {
         if (err) {
           mongodbFs.stop(function() { done(err); });
@@ -75,8 +66,9 @@ describe('MongoDB-Fs', function() {
   });
 
   after(function(done) {
-    logger.trace('disconnect');
+    logger.info('Disconnecting...');
     mongoose.disconnect(function() {
+      logger.info('Stopping fake server...');
       mongodbFs.stop(done);
     });
   });
@@ -272,9 +264,7 @@ describe('MongoDB-Fs', function() {
       Item.findOne({field1: 'value1'}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('id');
-        logger.trace('item :', item);
         var itemId = item.id;
-        logger.trace('itemId :', itemId);
         Item.findById(itemId, function(error, item) {
           if (error) return done(error);
           expect(item).to.not.be.empty;
@@ -287,9 +277,7 @@ describe('MongoDB-Fs', function() {
       Item.findOne({field1: 'value1'}, function(error, item) {
         if (error) return done(error);
         expect(item).to.have.property('id');
-        logger.trace('item :', item);
         var itemId = item.id;
-        logger.trace('itemId :', itemId);
         Item.findByIdAndUpdate(
           itemId,
           {'$set': {field1: 'value1Modified'}},
