@@ -23,8 +23,6 @@ dbConfig.url = util.format('mongodb://localhost:%d/%s', config.port, dbConfig.na
 
 var dbOptions = {server: {poolSize: 1}};
 
-mongoose.model('Item', new mongoose.Schema({any: mongoose.Schema.Types.Mixed}));
-
 var Item;
 
 describe('MongoDb-Fs in-process operations do not hang', function() {
@@ -33,17 +31,20 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
   before(function(done) {
     mongodbFs.init(config);
     logger.info('Starting fake server...');
-    mongodbFs.start(function(err) {
-      if (err) return done(err);
+    mongodbFs.start(function(error) {
+      if (error) return done(error);
 
       mongoose.set('debug', logLevel === 'debug' || logLevel === 'trace');
       logger.info('Connecting...');
-      mongoose.connect(dbConfig.url, dbOptions, function(err) {
-        if (err) {
-          mongodbFs.stop(function() { done(err); });
+      mongoose.connect(dbConfig.url, dbOptions, function(error) {
+        if (error) {
+          mongodbFs.stop(function() { done(error); });
           return;
         }
-        Item = mongoose.connection.model('Item');
+        delete mongoose.connection.models.Item;
+        Item = mongoose.model(
+          'Item',
+          new mongoose.Schema({any: mongoose.Schema.Types.Mixed}));
         done();
       });
     });
@@ -176,8 +177,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       Item.collection.update(
         {a: 'value'},
         {a: 'new value', '$inc': {b: 1}},
-        function(err) {
-          if (err) return done(err);
+        function(error) {
+          if (error) return done(error);
           expect(config.mocks.fakedb.items)
             .to.deep.equal([{a: 'new value', b: 2, c: 'there', _id: id}]);
           done();
@@ -190,8 +191,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       Item.collection.update(
         {a: 'value1'},
         {'$set': {'b.c': 42}},
-        function(err) {
-          if (err) return done(err);
+        function(error) {
+          if (error) return done(error);
           expect(config.mocks.fakedb.items)
             .to.deep.equal([{a: 'value1', b: {c: 42}, _id: id}]);
           done();
@@ -217,8 +218,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
     it('replaces entire documents', function(done) {
       var id = new mongoose.Types.ObjectId();
       config.mocks.fakedb.items = [{a: 'value1', b: 1, _id: id}];
-      Item.collection.update({a: 'value1'}, {b: 42}, function(err) {
-        if (err) return done(err);
+      Item.collection.update({a: 'value1'}, {b: 42}, function(error) {
+        if (error) return done(error);
         // The subfield a.c should be gone as the update document does not
         // specify any operators.
         expect(config.mocks.fakedb.items)
@@ -264,10 +265,10 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       Item.collection.update(
         {},
         {'$pushAll': {'key': ['a']}},
-        function(err) {
-          expect(err).to.exist;
-          expect(err.ok).to.be.false;
-          expect(err)
+        function(error) {
+          expect(error).to.exist;
+          expect(error.ok).to.be.false;
+          expect(error)
             .to.have.property('err', "The field 'key' must be an array.");
           expect(config.mocks.fakedb.items).to.have.length(1);
           expect(config.mocks.fakedb.items[0])
@@ -281,10 +282,10 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       Item.collection.update(
         {},
         {'$pushAll': {key: 'abc'}},
-        function(err) {
-          expect(err).to.exist;
-          expect(err.ok).to.be.false;
-          expect(err)
+        function(error) {
+          expect(error).to.exist;
+          expect(error.ok).to.be.false;
+          expect(error)
             .to.have.property('err')
             .to.contain(
               '$pushAll requires an array of values but was given an String');
@@ -407,10 +408,10 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
 
     it('$pull from non-array fails', function(done) {
       config.mocks.fakedb.items = [{key: ['value1', 'value2']}];
-      Item.collection.update({}, {$pull: {'key.1': 'a'}}, function(err) {
-        expect(err).to.exist;
-        expect(err.ok).to.be.false;
-        expect(err)
+      Item.collection.update({}, {$pull: {'key.1': 'a'}}, function(error) {
+        expect(error).to.exist;
+        expect(error.ok).to.be.false;
+        expect(error)
           .to.have.property('err', 'Cannot apply $pull to a non-array value');
         expect(config.mocks.fakedb.items).to.have.length(1);
         expect(config.mocks.fakedb.items[0])
@@ -423,10 +424,10 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
       config.mocks.fakedb.items = [{key: 'value1'}];
       Item.collection.update(
         {key: 'value1'},
-        {$set: {'key.k2.k3': 5 }}, function(err, item) {
-        expect(err).to.exist;
-        expect(err.ok).to.be.false;
-        expect(err)
+        {$set: {'key.k2.k3': 5 }}, function(error, item) {
+        expect(error).to.exist;
+        expect(error.ok).to.be.false;
+        expect(error)
           .to.have.property(
             'err',
             'cannot use the part (k2 of key.k2.k3)' +
@@ -587,8 +588,8 @@ describe('MongoDb-Fs in-process operations do not hang', function() {
           {a: 'value'},
           {'$set': {a: 'new value'}, '$inc': {b: 10}},
           {upsert: true},
-          function(err) {
-            if (err) return done(err);
+          function(error) {
+            if (error) return done(error);
             expect(config.mocks.fakedb.items)
               .to.deep.equal([{a: 'new value', b: 11, _id: id1}]);
             done();

@@ -8,11 +8,9 @@ var util = require('util');
 
 var mocks = require('./mocks');
 
-var config, schema, dbConfig, dbOptions, Item, Unknown;
-
 var logLevel = process.env.LOG_LEVEL || 'warn';
 
-config = {
+var config = {
   port: 27027,
   mocks: {fakedb: {items: []}},
   log: {level: logLevel},
@@ -22,26 +20,13 @@ config = {
 var logger = log4js.getLogger(path.basename(__filename).replace(/[.]js$/, ''));
 logger.setLevel(logLevel);
 
-schema = {
-  field1: String,
-  field2: {
-    field3: Number,
-    field4: String
-  },
-  field5: Array
-};
-
-dbConfig = {
-  name: 'fakedb'
-};
+var dbConfig = {name: 'fakedb'};
 dbConfig.url = util.format('mongodb://localhost:%d/%s', config.port, dbConfig.name);
 
-dbOptions = {
-  server: { poolSize: 1 }
-};
+var dbOptions = {server: {poolSize: 1}};
 
-mongoose.model('Item', schema);
-mongoose.model('Unknown', { name: String });
+var Item;
+var NonExistent;
 
 describe('MongoDB-Fs', function() {
   var expect = chai.expect;
@@ -50,16 +35,26 @@ describe('MongoDB-Fs', function() {
     mongodbFs.init(config);
     mongoose.set('debug', logLevel === 'debug' || logLevel === 'trace');
     logger.info('Starting fake server...');
-    mongodbFs.start(function(err) {
-      if (err) return done(err);
+    mongodbFs.start(function(error) {
+      if (error) return done(error);
       logger.info('Connecting...');
-      mongoose.connect(dbConfig.url, dbOptions, function(err) {
-        if (err) {
-          mongodbFs.stop(function() { done(err); });
+      mongoose.connect(dbConfig.url, dbOptions, function(error) {
+        if (error) {
+          mongodbFs.stop(function() { done(error); });
           return;
         }
-        Item = mongoose.connection.model('Item');
-        Unknown = mongoose.connection.model('Unknown');
+
+        var itemSchema = {
+          field1: String,
+          field2: {
+            field3: Number,
+            field4: String
+          },
+          field5: Array
+        };
+        delete mongoose.connection.models.Item;
+        Item = mongoose.model('Item', itemSchema);
+        NonExistent = mongoose.model('NonExistent', { name: String });
         done();
       });
     });
@@ -76,8 +71,8 @@ describe('MongoDB-Fs', function() {
   beforeEach(function(done) {
     // Restore the database to the original state to make tests
     // order-independent.
-    Item.remove({}, function(err) {
-      if (err) done(err);
+    Item.remove({}, function(error) {
+      if (error) return done(error);
       // Use copies of the original mock objects to avoid one test affecting
       // others by modifying objects in the database.
       var itemsCopy = _.cloneDeep(mocks.fakedb.items, function(value) {
@@ -93,8 +88,8 @@ describe('MongoDB-Fs', function() {
 
   describe('filters', function() {
     it('$all', function(done) {
-      Item.find({'field5': {$all: ['a', 'c']}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field5': {$all: ['a', 'c']}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(1);
         expect(items[0].toObject())
           .to.have.property('field5')
@@ -104,8 +99,8 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$gt', function(done) {
-      Item.find({'field2.field3': {$gt: 32}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': {$gt: 32}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(1);
         expect(items[0].toObject())
           .to.have.deep.property('field2.field3', 33);
@@ -114,16 +109,16 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$gte', function(done) {
-      Item.find({'field2.field3': {$gte: 32}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': {$gte: 32}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(2);
         done();
       });
     });
 
     it('$in', function(done) {
-      Item.find({'field2.field3': {$in: [32, 33]}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': {$in: [32, 33]}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(2);
         expect(items[0]).to.have.deep.property('field2.field3', 32);
         expect(items[1]).to.have.deep.property('field2.field3', 33);
@@ -132,8 +127,8 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$lt', function(done) {
-      Item.find({'field2.field3': { $lt: 32}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': { $lt: 32}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(1);
         expect(items[0]).to.have.deep.property('field2.field3', 31);
         done();
@@ -141,16 +136,16 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$lte', function(done) {
-      Item.find({'field2.field3': {$gte: 32}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': {$gte: 32}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(2);
         done();
       });
     });
 
     it('$ne', function(done) {
-      Item.find({'field2.field3': {$ne: 32}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': {$ne: 32}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(2);
         expect(items[0]).to.have.deep.property('field2.field3', 31);
         expect(items[1]).to.have.deep.property('field2.field3', 33);
@@ -159,8 +154,8 @@ describe('MongoDB-Fs', function() {
     });
 
     it('$nin', function(done) {
-      Item.find({'field2.field3': {$nin: [32, 33]}}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': {$nin: [32, 33]}}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(1);
         expect(items[0]).to.have.deep.property('field2.field3', 31);
         done();
@@ -171,8 +166,8 @@ describe('MongoDB-Fs', function() {
       Item.find({$or: [
         {field1: 'value1'},
         {'field2.field3': 32}
-      ]}, function(err, items) {
-        expect(err).to.not.exist;
+      ]}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(2);
         expect(items[0]).to.have.property('field1', 'value1');
         expect(items[0]).to.have.deep.property('field2.field3', 31);
@@ -183,8 +178,8 @@ describe('MongoDB-Fs', function() {
     });
 
     it('simple filter', function(done) {
-      Item.find({'field2.field3': 32}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field3': 32}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(1);
         expect(items[0]).to.have.deep.property('field2.field3', 32);
         done();
@@ -192,8 +187,8 @@ describe('MongoDB-Fs', function() {
     });
 
     it('2 fields filter', function(done) {
-      Item.find({field1: 'value1', 'field2.field3': 31}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({field1: 'value1', 'field2.field3': 31}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(1);
         expect(items[0]).to.have.property('field1', 'value1');
         expect(items[0]).to.have.deep.property('field2.field3', 31);
@@ -202,8 +197,8 @@ describe('MongoDB-Fs', function() {
     });
 
     it('string filter', function(done) {
-      Item.find({'field2.field4': 'value24'}, function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({'field2.field4': 'value24'}, function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(1);
         expect(items[0]).to.have.deep.property('field2.field4', 'value24');
         done();
@@ -211,8 +206,8 @@ describe('MongoDB-Fs', function() {
     });
 
     it('reports invalid queries', function(done) {
-      Item.find({'$eq': 'value24'}, function(err, items) {
-        expect(err).to.match(/BadValue unknown top level operator: [$]eq/);
+      Item.find({'$eq': 'value24'}, function(error, items) {
+        expect(error).to.match(/BadValue unknown top level operator: [$]eq/);
         expect(items).to.not.exist;
         done();
       });
@@ -221,40 +216,40 @@ describe('MongoDB-Fs', function() {
 
   describe('find', function() {
     it('finds all documents', function(done) {
-      Item.find(function(err, items) {
-        expect(err).to.not.exist;
+      Item.find(function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(3);
         done();
       });
     });
 
     it('finds no unknown documents', function(done) {
-      Unknown.find(function(err, items) {
-        expect(err).to.not.exist;
+      NonExistent.find(function(error, items) {
+        if (error) return done(error);
         expect(items).to.have.length(0);
         done();
       });
     });
 
     it('supports skip', function(done) {
-      Item.find({}).skip(1).exec(function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({}).skip(1).exec(function(error, items) {
+        if (error) return done(error);
         expect(_.pluck(items, 'field1')).to.deep.equal(['value11', 'value21']);
         done();
       });
     });
 
     it('supports limit', function(done) {
-      Item.find({}).limit(2).exec(function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({}).limit(2).exec(function(error, items) {
+        if (error) return done(error);
         expect(_.pluck(items, 'field1')).to.deep.equal(['value1', 'value11']);
         done();
       });
     });
 
     it('supports skip together with limit', function(done) {
-      Item.find({}).skip(1).limit(1).exec(function(err, items) {
-        expect(err).to.not.exist;
+      Item.find({}).skip(1).limit(1).exec(function(error, items) {
+        if (error) return done(error);
         expect(_.pluck(items, 'field1')).to.deep.equal(['value11']);
         done();
       });
@@ -300,16 +295,16 @@ describe('MongoDB-Fs', function() {
 
     it('saves document to collection', function(done) {
       var item = new Item(newItemFields);
-      item.save(function(err, savedItem) {
-        expect(err).to.not.exist;
+      item.save(function(error, savedItem) {
+        if (error) return done(error);
         expect(savedItem).to.exist;
-        Item.findById(savedItem._id, function(err, newItem) {
-          expect(err).to.not.exist;
+        Item.findById(savedItem._id, function(error, newItem) {
+        if (error) return done(error);
           expect(newItem).to.exist;
           expect(newItem.toObject())
             .to.deep.equal(savedItem.toObject());
-          Item.collection.count({}, function(err, count) {
-            expect(err).to.not.exist;
+          Item.collection.count({}, function(error, count) {
+            if (error) return done(error);
             expect(count).to.equal(mocks.fakedb.items.length + 1);
             done();
           });
@@ -319,11 +314,11 @@ describe('MongoDB-Fs', function() {
 
     it('changes document count', function(done) {
       var item = new Item(newItemFields);
-      item.save(function(err, savedItem) {
-        expect(err).to.not.exist;
+      item.save(function(error, savedItem) {
+        if (error) return done(error);
         expect(savedItem).to.exist;
-        Item.collection.count({}, function(err, count) {
-          expect(err).to.not.exist;
+        Item.collection.count({}, function(error, count) {
+          if (error) return done(error);
           expect(count).to.equal(mocks.fakedb.items.length + 1);
           done();
         });
@@ -333,13 +328,13 @@ describe('MongoDB-Fs', function() {
 
   describe('remove', function() {
     it('removes document from collection', function(done) {
-      Item.findOne({'field1': 'value11'}, function(err, item) {
-        expect(err).to.not.exist;
+      Item.findOne({'field1': 'value11'}, function(error, item) {
+        if (error) return done(error);
         expect(item).to.exist;
-        item.remove(function(err) {
-          expect(err).to.not.exist;
-          Item.findById(item._id, function(err, noItem) {
-            expect(err).to.not.exist;
+        item.remove(function(error) {
+          if (error) return done(error);
+          Item.findById(item._id, function(error, noItem) {
+            if (error) return done(error);
             expect(noItem).to.not.exist;
             done();
           });
@@ -348,12 +343,12 @@ describe('MongoDB-Fs', function() {
     });
 
     it('changes documents count', function(done) {
-      Item.findOne({'field1': 'value11'}, function(err, item) {
-        expect(err).to.not.exist;
+      Item.findOne({'field1': 'value11'}, function(error, item) {
+        if (error) return done(error);
         expect(item).to.exist;
-        item.remove(function(err) {
-          Item.collection.count({}, function(err, count) {
-            expect(err).to.not.exist;
+        item.remove(function(error) {
+          Item.collection.count({}, function(error, count) {
+            if (error) return done(error);
             expect(count).to.equal(mocks.fakedb.items.length - 1);
             done();
           });
@@ -362,11 +357,11 @@ describe('MongoDB-Fs', function() {
     });
 
     it('removes documents by query', function(done) {
-      Item.remove({'field2.field3': {$gt: 31}}, function(err, numAffected) {
-        expect(err).to.not.exist;
+      Item.remove({'field2.field3': {$gt: 31}}, function(error, numAffected) {
+        if (error) return done(error);
         expect(numAffected).to.equal(2);
-        Item.find({}, function(err, items) {
-          expect(err).to.not.exist;
+        Item.find({}, function(error, items) {
+        if (error) return done(error);
           expect(items).to.have.length(1);
           expect(items[0].toObject())
             .to.deep.equal(mocks.fakedb.items[0]);
@@ -378,14 +373,14 @@ describe('MongoDB-Fs', function() {
 
   describe('update', function() {
     it('updates top-level fields', function(done) {
-      Item.findOne({'field1': 'value11'}, function(err, item) {
-        expect(err).to.not.exist;
+      Item.findOne({'field1': 'value11'}, function(error, item) {
+        if (error) return done(error);
         expect(item).to.exist;
         item.field1 = 'new value';
-        item.save(function(err) {
-          expect(err).to.not.exist;
-          Item.findById(item._id, function(err, newItem) {
-            expect(err).to.not.exist;
+        item.save(function(error) {
+          if (error) return done(error);
+          Item.findById(item._id, function(error, newItem) {
+            if (error) return done(error);
             expect(newItem).to.exist;
             expect(newItem.toObject()).to.deep.equal(item.toObject());
             done();
@@ -395,13 +390,13 @@ describe('MongoDB-Fs', function() {
     });
 
     it('does not change document count', function(done) {
-      Item.findOne({}, function(err, item) {
-        expect(err).to.not.exist;
+      Item.findOne({}, function(error, item) {
+        if (error) return done(error);
         expect(item).to.exist;
         item.field1 = 'new value';
-        item.save(function(err) {
-          Item.collection.count({}, function(err, count) {
-            expect(err).to.not.exist;
+        item.save(function(error) {
+          Item.collection.count({}, function(error, count) {
+            if (error) return done(error);
             expect(count).to.equal(mocks.fakedb.items.length);
             done();
           });
@@ -410,14 +405,14 @@ describe('MongoDB-Fs', function() {
     });
 
     it('updates fields in subdocuments', function(done) {
-      Item.findOne({'field1': 'value11'}, function(err, item) {
-        expect(err).to.not.exist;
+      Item.findOne({'field1': 'value11'}, function(error, item) {
+        if (error) return done(error);
         expect(item).to.have.deep.property('field2.field3');
         item.field2.field3 = 424242;
-        item.save(function(err) {
-          expect(err).to.not.exist;
-          Item.findById(item._id, function(err, newItem) {
-            expect(err).to.not.exist;
+        item.save(function(error) {
+          if (error) return done(error);
+          Item.findById(item._id, function(error, newItem) {
+            if (error) return done(error);
             expect(newItem).to.exist;
             expect(newItem.toObject()).to.deep.equal(item.toObject());
             done();
@@ -431,11 +426,11 @@ describe('MongoDB-Fs', function() {
         {'field2.field3': {$gt: 31}},
         {$set: {field1: 'new value'}},
         {multi: true},
-        function(err, numAffected) {
-          expect(err).to.not.exist;
+        function(error, numAffected) {
+          if (error) return done(error);
           expect(numAffected).to.equal(2);
-          Item.find({}, function(err, items) {
-            expect(err).to.not.exist;
+          Item.find({}, function(error, items) {
+            if (error) return done(error);
             expect(items)
               .to.have.deep.property('[0].field1', 'value1');
             expect(items)
