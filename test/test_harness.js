@@ -77,4 +77,4 @@ TestHarness.setUp = defaultInstance.setUp.bind(defaultInstance);
 TestHarness.tearDown = defaultInstance.tearDown.bind(defaultInstance);
 TestHarness.createLogger = defaultInstance.createLogger.bind(defaultInstance);
 
-module.exports = TestHarness
+module.exports = TestHarness;
