@@ -32,13 +32,22 @@ describe('remove', function() {
     });
   });
 
-  it('by query', function(done) {
+  it('removes documents by query', function(done) {
     fakeDatabase.items = [{key: 'value1'}, {key: 'value2'}];
     Item.remove({key: {$ne: 'value1'}}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase.items).to.have.length(1);
       expect(fakeDatabase.items[0])
         .to.have.property('key', 'value1');
+      done();
+    });
+  });
+
+  it('does not create non-existent collection', function(done) {
+    delete fakeDatabase.items;
+    Item.remove({key: 'value1'}, function(error) {
+      if (error) return done(error);
+      expect(fakeDatabase).to.not.have.property('items');
       done();
     });
   });

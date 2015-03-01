@@ -77,6 +77,24 @@ describe('distinct', function() {
     });
   });
 
+  it('handles non-existent collection', function(done) {
+    delete fakeDatabase.items;
+    Item.collection.distinct('key', function(error, values) {
+      if (error) return done(error);
+      expect(values).to.deep.equal([]);
+      done();
+    });
+  });
+
+  it('does not create non-existent collection', function(done) {
+    delete fakeDatabase.items;
+    Item.collection.distinct('key', function(error, values) {
+      if (error) return done(error);
+      expect(fakeDatabase).to.not.have.property('items');
+      done();
+    });
+  });
+
   it('returns empty array if field parameter is invalid', function(done) {
     fakeDatabase.items = [{key: 1}, {key: 2}, {key: 3}];
     Item.collection.distinct(42, function(error, values) {
