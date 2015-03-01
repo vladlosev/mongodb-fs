@@ -11,6 +11,7 @@ describe('findAndModify', function() {
   var id2 = new mongoose.Types.ObjectId();
 
   var fakeDatabase = {};
+  var harness = new TestHarness({fakedb: fakeDatabase});
   var Item;
 
   var originalItems = [
@@ -19,7 +20,6 @@ describe('findAndModify', function() {
 
   ];
   before(function(done) {
-    var harness = new TestHarness({fakedb: fakeDatabase});
     harness.setUp(function(error) {
       Item = mongoose.connection.models.Item;
       done(error);
@@ -27,7 +27,7 @@ describe('findAndModify', function() {
   });
 
   after(function(done) {
-    TestHarness.tearDown(done);
+    harness.tearDown(done);
   });
 
   beforeEach(function() {

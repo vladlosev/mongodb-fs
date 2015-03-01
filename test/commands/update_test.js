@@ -11,10 +11,10 @@ describe('update', function() {
   var id2 = new mongoose.Types.ObjectId();
 
   var fakeDatabase = {};
+  var harness = new TestHarness({fakedb: fakeDatabase});
   var Item;
 
   before(function(done) {
-    var harness = new TestHarness({fakedb: fakeDatabase});
     harness.setUp(function(error) {
       Item = mongoose.connection.models.Item;
       done(error);
@@ -22,7 +22,7 @@ describe('update', function() {
   });
 
   after(function(done) {
-    TestHarness.tearDown(done);
+    harness.tearDown(done);
   });
 
   it('basic', function(done) {
