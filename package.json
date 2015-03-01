@@ -13,7 +13,7 @@
   "homepage": "https://github.com/openhoat/mongodb-fs",
   "main": "lib/mongodb-fs.js",
   "scripts": {
-    "test": "mocha test/test*.js"
+    "test": "mocha test/test*.js test/commands/"
   },
   "author": {
     "name": "Olivier Penhoat",
