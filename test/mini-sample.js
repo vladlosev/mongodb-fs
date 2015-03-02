@@ -31,6 +31,7 @@ mongodbFs.init({
     // logger must implement the following methods: error, warn, info, debug,
     // trace.
     logger: undefined
+  }
 });
 
 mongodbFs.start(function(err) {

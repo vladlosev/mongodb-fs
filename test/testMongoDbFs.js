@@ -6,66 +6,71 @@ var mongoose = require('mongoose');
 var path = require('path');
 var util = require('util');
 
-var mocks = require('./mocks');
-
-var logLevel = process.env.LOG_LEVEL || 'warn';
-
-var config = {
-  port: 27027,
-  mocks: {fakedb: {items: []}},
-  log: {level: logLevel},
-  fork: true
-};
-
-var logger = log4js.getLogger(path.basename(__filename).replace(/[.]js$/, ''));
-logger.setLevel(logLevel);
-
-var dbConfig = {name: 'fakedb'};
-dbConfig.url = util.format('mongodb://localhost:%d/%s', config.port, dbConfig.name);
-
-var dbOptions = {server: {poolSize: 1}};
+var TestHarness = require('./test_harness');
 
 var Item;
 var NonExistent;
 
+var mocks = {
+  fakedb: {
+    items: [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        field1: 'value1',
+        field2: {
+          field3: 31,
+          field4: 'value4'
+        },
+        field5: ['a', 'b', 'c']
+      },
+      {
+        _id: new mongoose.Types.ObjectId(),
+        field1: 'value11',
+        field2: {
+          field3: 32,
+          field4: 'value14'
+        },
+        field5: ['a', 'b', 'd']
+      },
+      {
+        _id: new mongoose.Types.ObjectId(),
+        field1: 'value21',
+        field2: {
+          field3: 33,
+          field4: 'value24'
+        },
+        field5: ['a', 'e', 'f']
+      }
+    ]
+  }
+};
+
 describe('MongoDB-Fs', function() {
   var expect = chai.expect;
+  var harness = new TestHarness(mocks);
 
   before(function(done) {
-    mongodbFs.init(config);
-    mongoose.set('debug', logLevel === 'debug' || logLevel === 'trace');
-    logger.info('Starting fake server...');
-    mongodbFs.start(function(error) {
+    harness.config.fork = true;
+    harness.setUp(function(error) {
       if (error) return done(error);
-      logger.info('Connecting...');
-      mongoose.connect(dbConfig.url, dbOptions, function(error) {
-        if (error) {
-          mongodbFs.stop(function() { done(error); });
-          return;
-        }
 
-        var itemSchema = {
-          field1: String,
-          field2: {
-            field3: Number,
-            field4: String
-          },
-          field5: Array
-        };
-        delete mongoose.connection.models.Item;
-        Item = mongoose.model('Item', itemSchema);
-        NonExistent = mongoose.model('NonExistent', { name: String });
-        done();
-      });
+      var itemSchema = {
+        field1: String,
+        field2: {
+          field3: Number,
+          field4: String
+        },
+        field5: Array
+      };
+      delete mongoose.connection.models.Item;
+      Item = mongoose.model('Item', itemSchema);
+      NonExistent = mongoose.model('NonExistent', { name: String });
+      done();
     });
   });
 
   after(function(done) {
-    logger.info('Disconnecting...');
-    mongoose.disconnect(function() {
-      logger.info('Stopping fake server...');
-      mongodbFs.stop(done);
-    });
+    harness.tearDown(done);
   });
 
   beforeEach(function(done) {

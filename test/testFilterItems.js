@@ -6,7 +6,6 @@ var bson = require('bson');
 
 var log = require('../lib/log')
 var filter = require('../lib/filter')
-var mocks = require('./mocks');
 
 var logLevel = process.env.LOG_LEVEL || 'WARN';
 
