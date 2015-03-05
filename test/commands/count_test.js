@@ -29,4 +29,22 @@ describe('count', function() {
       done();
     });
   });
+
+  it('reports count of non-existent collection as zero', function(done) {
+    delete fakeDatabase.items;
+    Item.count({}, function(error, n) {
+      if (error) return done(error);
+      expect(n).to.equal(0);
+      done();
+    });
+  });
+
+  it('does not create a collection if non-existent', function(done) {
+    delete fakeDatabase.items;
+    Item.count({}, function(error, n) {
+      if (error) return done(error);
+      expect(fakeDatabase).to.not.have.property('items');
+      done();
+    });
+  });
 });

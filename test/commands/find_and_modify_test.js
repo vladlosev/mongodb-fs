@@ -107,6 +107,19 @@ describe('findAndModify', function() {
       });
   });
 
+  it('does not create non-existent collection', function(done) {
+    delete fakeDatabase.items;
+    Item.collection.findAndModify(
+      {b: 1},
+      {},
+      {'$set': {a: 'new value'}},
+      function(error) {
+        if (error) return done(error);
+        expect(fakeDatabase).to.not.have.property('items');
+        done();
+    });
+  });
+
   it('rejects invalid requested projections', function(done) {
     Item.collection.findAndModify(
       {b: 1},
@@ -371,6 +384,22 @@ describe('findAndModify', function() {
             expect(_.omit(item, '_id')).to.deep.equal({a: 'new value'});
             done();
         });
+    });
+
+    it('creates new collection if it does not exist', function(done) {
+      delete fakeDatabase.items;
+      Item.collection.findAndModify(
+        {b: 3},
+        null,
+        {'$set': {a: 'new value'}},
+        {upsert: true},
+        function(error) {
+          if (error) return done(error);
+          expect(fakeDatabase.items).to.have.length(1);
+          expect(_.omit(fakeDatabase.items[0], '_id'))
+            .to.deep.equal({b: 3, a: 'new value'});
+          done();
+      });
     });
   });
 });

@@ -21,8 +21,19 @@ describe('insert', function() {
     harness.tearDown(done);
   });
 
-  it('basic', function(done) {
+  it('adds documents to collection', function(done) {
     fakeDatabase.items = [];
+    Item.collection.insert({key: 'value'}, function(error) {
+      if (error) return done(error);
+      expect(fakeDatabase.items).to.have.length(1);
+      expect(fakeDatabase.items[0])
+        .to.have.property('key', 'value');
+      done();
+    });
+  });
+
+  it('creates collection if it does not exist', function(done) {
+    delete fakeDatabase.items;
     Item.collection.insert({key: 'value'}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase.items).to.have.length(1);

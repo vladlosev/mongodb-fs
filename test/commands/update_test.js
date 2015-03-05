@@ -25,16 +25,37 @@ describe('update', function() {
     harness.tearDown(done);
   });
 
-  it('basic', function(done) {
+  it('updates all documents', function(done) {
     fakeDatabase.items = [{key: 'value1', _id: id1}, {key: 'value2', _id: id2}];
     Item.collection.update(
-      {key: 'value1'},
+      {},
       {'$set': {key: 'new value'}},
-      function(error) {
+      {multi: true},
+      function(error, updatedDocuments) {
         if (error) return done(error);
         expect(fakeDatabase.items).to.have.length(2);
         expect(fakeDatabase.items[0])
           .to.have.property('key', 'new value');
+        expect(fakeDatabase.items[1])
+          .to.have.property('key', 'new value');
+        expect(updatedDocuments).to.equal(2);
+        done();
+    });
+  });
+
+  it('updates documents by query', function(done) {
+    fakeDatabase.items = [{key: 'value1', _id: id1}, {key: 'value2', _id: id2}];
+    Item.collection.update(
+      {key: 'value2'},
+      {'$set': {key: 'new value'}},
+      function(error, updatedDocuments) {
+        if (error) return done(error);
+        expect(fakeDatabase.items).to.have.length(2);
+        expect(fakeDatabase.items[0])
+          .to.have.property('key', 'value1');
+        expect(fakeDatabase.items[1])
+          .to.have.property('key', 'new value');
+        expect(updatedDocuments).to.equal(1);
         done();
     });
   });
@@ -92,6 +113,17 @@ describe('update', function() {
       // specify any operators.
       expect(fakeDatabase.items)
         .to.deep.equal([{b: 42, _id: id}]);
+      done();
+    });
+  });
+
+  it('does not create non-existent collection', function(done) {
+    delete fakeDatabase.items;
+    Item.collection.update({a: 'value1'}, {b: 42}, function(error) {
+      if (error) return done(error);
+      // The subfield a.c should be gone as the update document does not
+      // specify any operators.
+      expect(fakeDatabase).to.not.have.property('items');
       done();
     });
   });
@@ -476,6 +508,23 @@ describe('update', function() {
           expect(fakeDatabase.items[0])
             .to.deep.equal({a: 'value1', b: 1, _id: id1});
           var newDocument = fakeDatabase.items[1];
+          expect(newDocument)
+            .to.have.deep.property('_id.constructor.name', 'ObjectID');
+          expect(newDocument).to.have.property('b', 10);
+          done();
+      });
+    });
+
+    it('creates a collection if does not exist when inserting', function(done) {
+      delete fakeDatabase.items;
+      Item.collection.update(
+        {a: 'value2'},
+        {b: 10},
+        {upsert: true},
+        function(error) {
+          if (error) return done(error);
+          expect(fakeDatabase.items).to.have.length(1);
+          var newDocument = fakeDatabase.items[0];
           expect(newDocument)
             .to.have.deep.property('_id.constructor.name', 'ObjectID');
           expect(newDocument).to.have.property('b', 10);
