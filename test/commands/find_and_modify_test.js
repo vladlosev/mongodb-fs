@@ -1,3 +1,5 @@
+'use strict';
+
 var _ = require('lodash');
 var chai = require('chai');
 var mongoose = require('mongoose');
@@ -155,7 +157,7 @@ describe('findAndModify', function() {
   it('fails when update document is not specified', function(done) {
     Item.collection.findAndModify(
       {b: 1},
-      function(error, item) {
+      function(error) {
         expect(error).to.have.property('ok', false);
         expect(error).to.have.property('name', 'MongoError');
         expect(error)
@@ -241,7 +243,7 @@ describe('findAndModify', function() {
         null,
         null,
         {remove: true},
-        function(error, item) {
+        function(error) {
           if (error) return done(error);
           // The first record is deleted.
           expect(fakeDatabase.items).to.deep.equal(originalItems.slice(1, 2));
@@ -257,8 +259,8 @@ describe('findAndModify', function() {
         {remove: true},
         function(error, item) {
           if (error) return done(error);
-          // The first record is deleted.
-          expect(fakeDatabase.items).to.deep.equal(originalItems.slice(1, 2));
+          // The first record was deleted and is returned.
+          expect(item).to.deep.equal(originalItems[0]);
           done();
       });
     });
@@ -332,7 +334,7 @@ describe('findAndModify', function() {
         function(error) {
           if (error) return done(error);
           expect(fakeDatabase.items).to.have.length(3);
-          expect(fakeDatabase.items.slice(0,2))
+          expect(fakeDatabase.items.slice(0, 2))
             .to.deep.equal(originalItems);
           expect(fakeDatabase.items[2])
             .to.have.deep.property('_id.constructor.name', 'ObjectID');

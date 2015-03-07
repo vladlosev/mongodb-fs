@@ -18,13 +18,13 @@ mongodbFs.init(config);
 
 mongodbFs.start(function(error) {
   if (error) {
-    console.error('Failed to start:', error.message);
+    process.stderr.write('Failed to start:' + error.message + '\n');
   } else {
-    console.info('Server started, awaiting connections.');
-    console.info(util.format(
-      "Run 'mongo localhost:%d/%s' to connect.",
+    process.stdout.write('Server started, awaiting connections.\n');
+    process.stdout.write(util.format(
+      "Run 'mongo localhost:%d/%s' to connect.\n",
       port,
-      database)); 
-    console.info('Press Ctrl+C to stop.');
+      database));
+    process.stdout.write('Press Ctrl+C to stop.\n');
   }
 });

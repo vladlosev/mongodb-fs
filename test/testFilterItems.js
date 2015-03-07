@@ -1,23 +1,17 @@
-var _ = require('lodash')
-var chai = require('chai')
+'use strict';
+
+var _ = require('lodash');
+var chai = require('chai');
 var mongoose = require('mongoose');
-var path = require('path')
+var path = require('path');
 var bson = require('bson');
 
-var log = require('../lib/log')
-var filter = require('../lib/filter')
+var log = require('../lib/log');
+var filter = require('../lib/filter');
 
 var logLevel = process.env.LOG_LEVEL || 'WARN';
 
 log.init({
-  log4js: {
-    appenders: [
-      {
-        type: 'console',
-        category: path.basename(__filename)
-      }
-    ]
-  },
   category: path.basename(__filename),
   level: logLevel
 });
@@ -404,7 +398,7 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {field1: {'$all': [2]}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
 
-        var filtered = filter.filterItems(items, {field1: {'$all': [1, 2]}});
+        filtered = filter.filterItems(items, {field1: {'$all': [1, 2]}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1]);
       });
 
@@ -475,32 +469,32 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {_id: {'$not': /2/}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
 
-        var filtered = filter.filterItems(items, {field1: {'$not': /2/}});
+        filtered = filter.filterItems(items, {field1: {'$not': /2/}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
 
-        var filtered = filter.filterItems(items, {'field2.a': {'$not': /2/}});
+        filtered = filter.filterItems(items, {'field2.a': {'$not': /2/}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
       });
 
       it('fails on non-operators', function() {
         expect(
           function() { filter.filterItems(items, {_id: {'$not': 2}}); })
-          .to.throw("BadValue $not needs a regex or a document");
+          .to.throw('BadValue $not needs a regex or a document');
 
         expect(
           function() { filter.filterItems(items, {_id: {'$not': [2]}}); })
-          .to.throw("BadValue $not needs a regex or a document");
+          .to.throw('BadValue $not needs a regex or a document');
 
         expect(
           function() { filter.filterItems(items, {_id: {'$not': {b: 2}}}); })
-          .to.throw("BadValue unknown operator: b");
+          .to.throw('BadValue unknown operator: b');
       });
 
       it('fails with $regex', function() {
         expect(
           function() {
             filter.filterItems(items, {_id: {'$not': {'$regex': '2'}}});
-          }).to.throw("BadValue $not cannot have a regex");
+          }).to.throw('BadValue $not cannot have a regex');
       });
     });
 
@@ -655,10 +649,10 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {'field1.0': 'b'});
         expect(_.pluck(filtered, '_id')).to.deep.equal(['b']);
 
-        var filtered = filter.filterItems(items, {'field1.1': 'b'});
+        filtered = filter.filterItems(items, {'field1.1': 'b'});
         expect(_.pluck(filtered, '_id')).to.deep.equal(['a']);
 
-        var filtered = filter.filterItems(items, {'field1.3': null});
+        filtered = filter.filterItems(items, {'field1.3': null});
         expect(_.pluck(filtered, '_id')).to.deep.equal([]);
       });
     });
@@ -721,7 +715,7 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {_id: {'$ne': 'a'}});
         expect(_.pluck(filtered, '_id')).to.deep.equal(['b', 'c']);
 
-        var filtered = filter.filterItems(items, {_id: {'$ne': 'h'}});
+        filtered = filter.filterItems(items, {_id: {'$ne': 'h'}});
         expect(_.pluck(filtered, '_id')).to.deep.equal(['a', 'b', 'c']);
       });
 
@@ -954,7 +948,6 @@ describe('filterItems', function() {
           expect(_.pluck(filtered, '_id')).to.deep.equal([]);
         });
 
-        
         it('multiline $option overrides no multiline', function() {
           var filtered = filter.filterItems(
             items,
@@ -1057,7 +1050,7 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {field0: {'$ne': date1Copy}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([2, 3]);
 
-        var filtered = filter.filterItems(items, {field0: {'$ne': date10Copy}});
+        filtered = filter.filterItems(items, {field0: {'$ne': date10Copy}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2, 3]);
       });
 
@@ -1296,9 +1289,8 @@ describe('filterItems', function() {
     var id4Copy = new bson.ObjectID(id4.toString());
     var id5Copy = new bson.ObjectID(id5.toString());
 
-    var id1DifferentType = mongoose.Types.ObjectId(id1.toHexString());
-    var id3DifferentType = mongoose.Types.ObjectId(id3.toHexString());
-    var id4DifferentType = mongoose.Types.ObjectId(id4.toHexString());
+    var id1DifferentType = new mongoose.Types.ObjectId(id1.toHexString());
+    var id3DifferentType = new mongoose.Types.ObjectId(id3.toHexString());
 
     var items = [
       {_id: 1, id: id1, ids: [id3, id4]},
@@ -1356,7 +1348,7 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {id: {'$ne': id1Copy}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
 
-        var filtered = filter.filterItems(items, {id: {'$ne': id5Copy}});
+        filtered = filter.filterItems(items, {id: {'$ne': id5Copy}});
         expect(_.pluck(filtered, '_id')).to.deep.equal([1, 2]);
       });
 

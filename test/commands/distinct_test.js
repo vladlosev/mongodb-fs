@@ -1,3 +1,5 @@
+'use strict';
+
 var chai = require('chai');
 var mongoose = require('mongoose');
 
@@ -88,7 +90,7 @@ describe('distinct', function() {
 
   it('does not create non-existent collection', function(done) {
     delete fakeDatabase.items;
-    Item.collection.distinct('key', function(error, values) {
+    Item.collection.distinct('key', function(error) {
       if (error) return done(error);
       expect(fakeDatabase).to.not.have.property('items');
       done();

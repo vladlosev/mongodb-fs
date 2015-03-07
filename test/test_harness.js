@@ -1,3 +1,5 @@
+'use strict';
+
 var log4js = require('log4js');
 var mongoose = require('mongoose');
 var path = require('path');
@@ -65,7 +67,7 @@ TestHarness.prototype.createLogger = function createLogger(modulePathName) {
   var logger = log4js.getLogger(loggerName);
   logger.setLevel(this.config.log.level);
   return logger;
-}
+};
 
 var defaultInstance = new TestHarness({fakedb: {}});
 

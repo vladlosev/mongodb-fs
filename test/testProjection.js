@@ -1,16 +1,12 @@
 'use strict';
 
-var _ = require('lodash')
-var chai = require('chai')
+var chai = require('chai');
 var ObjectID = require('bson').ObjectID;
 
 var projection = require('../lib/projection');
 
 describe('projection', function() {
-  var expect = chai.expect;
-
   var id1 = new ObjectID();
-  var id1Copy = new ObjectID(id1);
 
   describe('validateProjection', function() {
     it('allows falsy value as projection', function() {

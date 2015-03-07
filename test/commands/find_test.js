@@ -1,3 +1,5 @@
+'use strict';
+
 var _ = require('lodash');
 var chai = require('chai');
 var mongoose = require('mongoose');
@@ -70,7 +72,7 @@ describe('find', function() {
   // without waiting for results from the first .
   it('run twice', function(done) {
     fakeDatabase.items = [{key: 'value1'}, {key: 'value2'}];
-    Item.find(function(error, items) {});
+    Item.find(function() {});
     Item.find(function(error, items) {
       if (error) return done(error);
       expect(items).to.have.length(2);
