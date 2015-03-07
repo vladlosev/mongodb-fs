@@ -161,6 +161,12 @@ describe('filterItems', function() {
         var filtered = filter.filterItems(items, {_id: /2/});
         expect(_.pluck(filtered, '_id')).to.deep.equal([]);
       });
+
+      it('fails on unknown operators', function() {
+        expect(
+          function() { filter.filterItems(items, {_id: {'$wombat': 3}}); })
+          .to.throw('BadValue unknown operator: $wombat');
+      });
     });
 
     describe('$eq', function() {
