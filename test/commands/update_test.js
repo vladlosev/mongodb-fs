@@ -750,7 +750,7 @@ describe('update', function() {
           expect(error).to.have.property('name', 'MongoError');
           expect(error)
             .to.have.property('err')
-            .to.have.string("multi update only works with $ operators");
+            .to.have.string('multi update only works with $ operators');
           done();
       });
     });
