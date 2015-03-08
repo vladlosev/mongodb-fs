@@ -5,33 +5,36 @@ var ObjectID = require('bson').ObjectID;
 
 var projection = require('../lib/projection');
 
+// Chai uses properties rather than methods for assertions.
+/* eslint-disable no-unused-expressions */
+
 describe('projection', function() {
   var id1 = new ObjectID();
 
   describe('validateProjection', function() {
     it('allows falsy value as projection', function() {
       chai.expect(projection.validateProjection(null))
-        .to.be.ok();
+        .to.be.ok;
     });
 
     it('allows pure inclusion projection', function() {
       chai.expect(projection.validateProjection({x: 1, y: 1}))
-        .to.be.ok();
+        .to.be.ok;
     });
 
     it('allows inclusion projection with _id excluded', function() {
       chai.expect(projection.validateProjection({x: 1, _id: 0}))
-        .to.be.ok();
+        .to.be.ok;
     });
 
     it('allows pure inclusion projection', function() {
       chai.expect(projection.validateProjection({x: 0, y: 0}))
-        .to.be.ok();
+        .to.be.ok;
     });
 
     it('disallows mixed inclusion and exclusion', function() {
       chai.expect(projection.validateProjection({x: 1, y: 0}))
-        .to.be.not.ok();
+        .to.be.not.ok;
     });
   });
 

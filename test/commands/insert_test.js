@@ -3,6 +3,8 @@
 var chai = require('chai');
 var mongoose = require('mongoose');
 
+chai.use(require('chai-properties'));
+
 var TestHarness = require('../test_harness');
 
 describe('insert', function() {
@@ -43,5 +45,39 @@ describe('insert', function() {
         .to.have.property('key', 'value');
       done();
     });
+  });
+
+  it('runs CreateIndexes if asked to insert into system.indexes',
+    function(done) {
+      fakeDatabase['system.indexes'] = [];
+
+      var Index = mongoose.model(
+        'Index',
+        new mongoose.Schema(
+          {any: mongoose.Schema.Types.Mixed},
+          {collection: 'system.indexes', versionKey: false, _id: false}));
+      Index.collection.insert(
+        [{key: {a: 1}, name: 'a_1', v: 1, ns: 'fakedb.items'}],
+        function(error, results) {
+          delete mongoose.connection.models.Index;
+          if (error) return done(error);
+
+          chai.expect(results).to.have.length(1);
+          chai.expect(results[0]).to.have.properties({
+            v: 1,
+            key: {a: 1},
+            name: 'a_1',
+            ns: 'fakedb.items'
+          });
+          chai.expect(fakeDatabase['system.indexes']).to.have.length(2);
+          chai.expect(fakeDatabase['system.indexes'][1])
+            .to.have.properties({
+              v: 1,
+              key: {a: 1},
+              name: 'a_1',
+              ns: 'fakedb.items'
+            });
+          done();
+        });
   });
 });
