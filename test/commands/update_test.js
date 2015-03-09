@@ -1,8 +1,13 @@
+'use strict';
+
 var _ = require('lodash');
 var chai = require('chai');
 var mongoose = require('mongoose');
 
 var TestHarness = require('../test_harness');
+
+// Chai uses properties rather than methods for assertions.
+/* eslint-disable no-unused-expressions */
 
 describe('update', function() {
   var expect = chai.expect;
@@ -33,6 +38,7 @@ describe('update', function() {
       {multi: true},
       function(error, updatedDocuments) {
         if (error) return done(error);
+        expect(updatedDocuments).to.equal(2);
         expect(fakeDatabase.items).to.have.length(2);
         expect(fakeDatabase.items[0])
           .to.have.property('key', 'new value');
@@ -50,6 +56,7 @@ describe('update', function() {
       {'$set': {key: 'new value'}},
       function(error, updatedDocuments) {
         if (error) return done(error);
+        expect(updatedDocuments).to.equal(1);
         expect(fakeDatabase.items).to.have.length(2);
         expect(fakeDatabase.items[0])
           .to.have.property('key', 'value1');
@@ -60,8 +67,23 @@ describe('update', function() {
     });
   });
 
+  it('updates nothing when query does not match', function(done) {
+    fakeDatabase.items = [{key: 'value1', _id: id1}, {key: 'value2', _id: id2}];
+    Item.collection.update(
+      {key: 'value3'},
+      {'$set': {key: 'new value'}},
+      function(error, updatedDocuments) {
+        if (error) return done(error);
+
+        expect(updatedDocuments).to.equal(0);
+        expect(fakeDatabase.items).to.have.length(2);
+        expect(_.pluck(fakeDatabase.items, 'key'))
+          .to.deep.equal(['value1', 'value2']);
+        done();
+    });
+  });
+
   it('replaces fields', function(done) {
-    var id = new mongoose.Types.ObjectId();
     fakeDatabase.items = [{a: 'value', b: 1, c: 'there', _id: id1}];
     Item.collection.update(
       {a: 'value'},
@@ -75,22 +97,20 @@ describe('update', function() {
   });
 
   it('replaces subfields', function(done) {
-    var id = new mongoose.Types.ObjectId();
-    fakeDatabase.items = [{a: 'value1', b: {c: 1}, _id: id}];
+    fakeDatabase.items = [{a: 'value1', b: {c: 1}, _id: id1}];
     Item.collection.update(
       {a: 'value1'},
       {'$set': {'b.c': 42}},
       function(error) {
         if (error) return done(error);
         expect(fakeDatabase.items)
-          .to.deep.equal([{a: 'value1', b: {c: 42}, _id: id}]);
+          .to.deep.equal([{a: 'value1', b: {c: 42}, _id: id1}]);
         done();
     });
   });
 
   it('rejects subfield literals', function(done) {
-    var id = new mongoose.Types.ObjectId();
-    fakeDatabase.items = [{a: 'value1', b: {c: 1}, _id: id}];
+    fakeDatabase.items = [{a: 'value1', b: {c: 1}, _id: id1}];
     Item.collection.update(
       {a: 'value1'},
       {'b.c': 42},
@@ -105,22 +125,23 @@ describe('update', function() {
   });
 
   it('replaces entire documents', function(done) {
-    var id = new mongoose.Types.ObjectId();
-    fakeDatabase.items = [{a: 'value1', b: 1, _id: id}];
+    fakeDatabase.items = [{a: 'value1', b: 1, _id: id1}];
     Item.collection.update({a: 'value1'}, {b: 42}, function(error) {
       if (error) return done(error);
       // The subfield a.c should be gone as the update document does not
       // specify any operators.
       expect(fakeDatabase.items)
-        .to.deep.equal([{b: 42, _id: id}]);
+        .to.deep.equal([{b: 42, _id: id1}]);
       done();
     });
   });
 
   it('does not create non-existent collection', function(done) {
     delete fakeDatabase.items;
-    Item.collection.update({a: 'value1'}, {b: 42}, function(error) {
+    Item.collection.update({a: 'value1'}, {b: 42}, function(error, n) {
       if (error) return done(error);
+
+      expect(n).to.equal(0);
       // The subfield a.c should be gone as the update document does not
       // specify any operators.
       expect(fakeDatabase).to.not.have.property('items');
@@ -129,12 +150,11 @@ describe('update', function() {
   });
 
   it('$pushAll to array', function(done) {
-    var id = new mongoose.Types.ObjectId;
-    fakeDatabase.items = [{_id: id, key: ['value1']}];
+    fakeDatabase.items = [{_id: id1, key: ['value1']}];
     Item.collection.update(
-      {_id: id},
+      {_id: id1},
       {'$pushAll': {key: ['value2']}},
-      function(error, item) {
+      function(error) {
         if (error) return done(error);
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
@@ -145,8 +165,7 @@ describe('update', function() {
   });
 
   it('$pushAll to non-existent field creates array', function(done) {
-    var id = new mongoose.Types.ObjectId;
-    fakeDatabase.items = [{_id: id}];
+    fakeDatabase.items = [{_id: id1}];
     Item.collection.update(
       {},
       {'$pushAll': {key: ['a', 'b']}},
@@ -198,13 +217,13 @@ describe('update', function() {
   });
 
   it('set array value', function(done) {
-    var id = new mongoose.Types.ObjectId;
-    fakeDatabase.items = [{_id: id, key: ['value1', 'value2']}];
+    fakeDatabase.items = [{_id: id1, key: ['value1', 'value2']}];
     Item.collection.update(
-      {_id: id},
+      {_id: id1},
       {'$set': {key: ['one', 'two']}},
-      function(error, item) {
+      function(error, n) {
         if (error) return done(error);
+        expect(n).to.equal(1);
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
           .to.have.property('key')
@@ -214,11 +233,10 @@ describe('update', function() {
   });
 
   it('set Date field', function(done) {
-    var id = new mongoose.Types.ObjectId;
     var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
     var now = new Date();
-    fakeDatabase.items = [{_id: id, date: tenSecondsAgo}];
-    Item.findOne({_id: id}, function(error, item) {
+    fakeDatabase.items = [{_id: id1, date: tenSecondsAgo}];
+    Item.findOne({_id: id1}, function(error, item) {
       if (error) return done(error);
       expect(item.toObject())
         .to.have.property('date')
@@ -237,10 +255,9 @@ describe('update', function() {
   });
 
   it('set array of dates field', function(done) {
-    var id = new mongoose.Types.ObjectId;
     var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
     var now = new Date();
-    fakeDatabase.items = [{_id: id, date: tenSecondsAgo}];
+    fakeDatabase.items = [{_id: id1, date: tenSecondsAgo}];
     Item.collection.update({}, {$set: {date: [now]}}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase.items).to.have.length(1);
@@ -255,8 +272,7 @@ describe('update', function() {
   });
 
   it('$pull', function(done) {
-    var id = new mongoose.Types.ObjectId;
-    fakeDatabase.items = [{_id: id, key: ['value1', 'value2']}];
+    fakeDatabase.items = [{_id: id1, key: ['value1', 'value2']}];
     Item.collection.update(
       {},
       {$pull: {key: 'value1'}},
@@ -271,9 +287,8 @@ describe('update', function() {
   });
 
   it('$pull ObjectIds', function(done) {
-    var id = new mongoose.Types.ObjectId();
-    var idCopy = new mongoose.Types.ObjectId(id.toString());
-    fakeDatabase.items = [{key: [id]}];
+    var idCopy = new mongoose.Types.ObjectId(id1.toString());
+    fakeDatabase.items = [{key: [id1]}];
     Item.collection.update({}, {$pull: {key: idCopy}}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase.items).to.have.length(1);
@@ -284,9 +299,8 @@ describe('update', function() {
   });
 
   it('$pull multiple fields', function(done) {
-    var id = new mongoose.Types.ObjectId();
     fakeDatabase.items = [{
-      _id: id,
+      _id: id1,
       key: ['a', 'b'],
       key2: ['c', 'd']
     }];
@@ -324,7 +338,7 @@ describe('update', function() {
     fakeDatabase.items = [{key: 'value1'}];
     Item.collection.update(
       {key: 'value1'},
-      {$set: {'key.k2.k3': 5 }}, function(error, item) {
+      {$set: {'key.k2.k3': 5 }}, function(error) {
       expect(error).to.exist;
       expect(error.ok).to.be.false;
       expect(error)
@@ -337,8 +351,6 @@ describe('update', function() {
   });
 
   describe('$unset', function() {
-    var id1 = new mongoose.Types.ObjectId();
-
     it('deletes fields', function(done) {
       fakeDatabase.items = [{a: 'value1', b: 33, _id: id1}];
       Item.collection.update(
@@ -665,9 +677,6 @@ describe('update', function() {
   });
 
   describe('multi', function() {
-    var id1 = new mongoose.Types.ObjectId();
-    var id2 = new mongoose.Types.ObjectId();
-
     it('updates single document by default', function(done) {
       fakeDatabase.items = [
         {a: 'value', b: 1, _id: id1},
@@ -741,7 +750,7 @@ describe('update', function() {
           expect(error).to.have.property('name', 'MongoError');
           expect(error)
             .to.have.property('err')
-            .to.have.string("multi update only works with $ operators");
+            .to.have.string('multi update only works with $ operators');
           done();
       });
     });

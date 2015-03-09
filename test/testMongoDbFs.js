@@ -1,10 +1,8 @@
+'use strict';
+
 var _ = require('lodash');
 var chai = require('chai');
-var log4js = require('log4js');
-var mongodbFs = require('../lib/mongodb-fs');
 var mongoose = require('mongoose');
-var path = require('path');
-var util = require('util');
 
 var TestHarness = require('./test_harness');
 
@@ -18,7 +16,10 @@ var fakeDatabase = {
     {key: 2, compound: {subkey: 21}, _id: new ObjectId()},
     {key: 3, compound: {subkey: 31}, _id: new ObjectId()}
   ]
-}
+};
+
+// Chai uses properties rather than methods for assertions.
+/* eslint-disable no-unused-expressions */
 
 describe('Works in forked mode', function() {
   var expect = chai.expect;
@@ -67,7 +68,7 @@ describe('Works in forked mode', function() {
     });
   });
 
-  describe('findAndUpdate', function(done) {
+  describe('findAndUpdate', function() {
     it('basic', function(done) {
       Item.findByIdAndUpdate(
         {_id: fakeDatabase.items[1]._id},

@@ -1,3 +1,6 @@
 language: node_js
 notifications:
   email: false
+script:
+  - gulp lint
+  - npm test

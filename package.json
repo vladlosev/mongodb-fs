@@ -10,10 +10,11 @@
     "mock",
     "test"
   ],
-  "homepage": "https://github.com/openhoat/mongodb-fs",
+  "homepage": "https://github.com/vladlosev/mongodb-fs",
   "main": "lib/mongodb-fs.js",
   "scripts": {
-    "test": "mocha test/test*.js test/commands/"
+    "test": "mocha test/test*.js test/commands/*_test.js",
+    "lint": "gulp lint"
   },
   "author": {
     "name": "Olivier Penhoat",
@@ -21,15 +22,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/openhoat/mongodb-fs.git"
+    "url": "git://github.com/vladlosev/mongodb-fs.git"
   },
   "bugs": {
-    "url": "https://github.com/openhoat/mongodb-fs/issues"
+    "url": "https://github.com/vladlosev/mongodb-fs/issues"
   },
   "licenses": [
     {
       "type": "EUPL",
-      "url": "https://github.com/openhoat/mongodb-fs/blob/master/EUPL-1.1.txt"
+      "url": "https://github.com/vladlosev/mongodb-fs/blob/master/EUPL-1.1.txt"
     }
   ],
   "engines": {
@@ -42,6 +43,9 @@
   },
   "devDependencies": {
     "chai": "~1.10.0",
+    "gulp": "^3.8.11",
+    "gulp-eslint": "^0.5.0",
+    "gulp-load-plugins": "^0.8.1",
     "mocha": "~1.21.4",
     "mongoose": "~3.8.18"
   }

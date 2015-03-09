@@ -1,3 +1,5 @@
+'use strict';
+
 var chai = require('chai');
 var mongoose = require('mongoose');
 
@@ -41,7 +43,7 @@ describe('count', function() {
 
   it('does not create a collection if non-existent', function(done) {
     delete fakeDatabase.items;
-    Item.count({}, function(error, n) {
+    Item.count({}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase).to.not.have.property('items');
       done();

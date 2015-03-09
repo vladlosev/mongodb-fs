@@ -1,0 +1,36 @@
+{
+  "env": {
+    "node": true
+  },
+  "globals": {
+    "it": true,
+    "xit": true,
+    "describe": true,
+    "xdescribe": true,
+    "before": true,
+    "after": true,
+    "beforeEach": true,
+    "afterEach": true,
+    "Promise": true
+  },
+  "rules": {
+    "no-underscore-dangle": 0,
+    "curly": 0,
+    "camelcase": 2,
+    "no-console": 2,
+    "quotes": [2, "single", "avoid-escape"],
+    "no-unused-vars": 2,
+    "no-debugger": 2,
+    "no-comma-dangle": 2,
+    "eqeqeq": 2,
+    "no-unreachable": 2,
+    "new-parens": 2,
+    "space-after-keywords": [2, "always"],
+    "no-spaced-func": 2,
+    "key-spacing": 0,
+    "no-shadow": 0,
+    "no-multi-spaces": 0,
+    "yoda": 0,
+    "strict": 2
+  }
+}

@@ -1,6 +1,11 @@
-var path = require('path')
-  , mongoose = require('mongoose')
-  , mongodbFs = require('../lib/mongodb-fs');
+'use strict';
+
+var mongoose = require('mongoose');
+var util     = require('util');
+
+var mongodbFs = require('../lib/mongodb-fs');
+
+/* eslint-disable no-console */
 
 // Usual mongoose code to define a schema for contact entities
 mongoose.model('Contact', {
@@ -34,20 +39,30 @@ mongodbFs.init({
   }
 });
 
+function reportError(when, error) {
+  console.error(util.format('Error %s: %s\n', when, error));
+}
+
 mongodbFs.start(function(err) {
-  mongoose.connect('mongodb://localhost:27027/fakedb', {server: {poolSize: 1}}, function(err) {
-    // Usual mongoose code to retreive all the contacts
-    var Contact;
-    Contact = mongoose.connection.model('Contact');
-    Contact.find(function(err, contacts) {
-      //
-      console.log('contacts :', contacts);
-      //
-      mongoose.disconnect(function(err) { // clean death
-        mongodbFs.stop(function(err) {
-          console.log('bye!');
+  if (err) return reportError('starting server', err);
+  mongoose.connect(
+    'mongodb://localhost:27027/fakedb',
+    {server: {poolSize: 1}},
+    function(err) {
+      if (err) return reportError('opening connection', err);
+      // Usual mongoose code to retreive all the contacts
+      var Contact;
+      Contact = mongoose.connection.model('Contact');
+      Contact.find(function(err, contacts) {
+        if (err) return reportError('loading document', err);
+        console.info('contacts :', contacts);
+        mongoose.disconnect(function(err) { // clean death
+          if (err) return reportError('closing connection', err);
+          mongodbFs.stop(function(err) {
+            if (err) return reportError('stopping server', err);
+            console.info('bye!');
+          });
         });
       });
     });
-  });
 });
