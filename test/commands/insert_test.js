@@ -70,6 +70,12 @@ describe('insert', function() {
             ns: 'fakedb.items'
           });
           chai.expect(fakeDatabase['system.indexes']).to.have.length(2);
+          chai.expect(fakeDatabase['system.indexes'][0])
+            .to.have.properties({
+              key: {_id: 1},
+              name: '_id_',
+              ns: 'fakedb.items'
+            });
           chai.expect(fakeDatabase['system.indexes'][1])
             .to.have.properties({
               v: 1,
