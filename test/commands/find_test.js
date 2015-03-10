@@ -6,6 +6,9 @@ var mongoose = require('mongoose');
 
 var TestHarness = require('../test_harness');
 
+// Chai uses properties rather than methods for assertions.
+/* eslint-disable no-unused-expressions */
+
 describe('find', function() {
   var expect = chai.expect;
 
@@ -159,7 +162,7 @@ describe('find', function() {
     ];
     Item.findById(new mongoose.Types.ObjectId(id3), function(error, item) {
       if (error) return done(error);
-      expect(item).to.exist();
+      expect(item).to.exist;
       expect(item.toObject()).to.deep.equal(fakeDatabase.items[2]);
       done();
     });

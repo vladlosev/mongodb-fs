@@ -86,7 +86,7 @@ describe('Works in forked mode', function() {
       var item = new Item({key: 4});
       item.save(function(error, savedItem) {
         if (error) return done(error);
-        expect(savedItem).to.exist();
+        expect(savedItem).to.exist;
         Item.findById(savedItem._id, function(error, newItem) {
         if (error) return done(error);
           expect(newItem).to.exist;
@@ -101,7 +101,7 @@ describe('Works in forked mode', function() {
     it('removes document from collection', function(done) {
       Item.findOne({'key': 2}, function(error, item) {
         if (error) return done(error);
-        expect(item).to.exist();
+        expect(item).to.exist;
         item.remove(function(error) {
           if (error) return done(error);
           Item.findById(item._id, function(error, noItem) {
@@ -118,13 +118,13 @@ describe('Works in forked mode', function() {
     it('updates documents', function(done) {
       Item.findOne({key: 1}, function(error, item) {
         if (error) return done(error);
-        expect(item).to.exist();
+        expect(item).to.exist;
         item.key = 42;
         item.save(function(error) {
           if (error) return done(error);
           Item.findById(item._id, function(error, newItem) {
             if (error) return done(error);
-            expect(newItem).to.exist();
+            expect(newItem).to.exist;
             expect(newItem.toObject()).to.deep.equal(item.toObject());
             done();
           });

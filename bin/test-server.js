@@ -12,7 +12,7 @@ var config = {
   mocks: {},
   log: {level: process.env.LOG_LEVEL}
 };
-config[database] = {};
+config.mocks[database] = {};
 
 mongodbFs.init(config);
 
