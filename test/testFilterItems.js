@@ -23,10 +23,6 @@ describe('filterItems', function() {
     {_id: 2, field1: [2, 3], field2: {a: 100, b: 200}},
     {_id: 3, field1: [5, 6, 7]}];
 
-  before(function() {
-    filter.init();
-  });
-
   describe('logical connectives', function() {
     it('$and', function() {
       var filtered = filter.filterItems(items,
