@@ -20,7 +20,7 @@ mongodbFs.start(function(error) {
   if (error) {
     process.stderr.write('Failed to start:' + error.message + '\n');
   } else {
-    process.stdout.write('Server started, awaiting connections.\n');
+    process.stdout.write('Server started, awaiting connections...\n');
     process.stdout.write(util.format(
       "Run 'mongo localhost:%d/%s' to connect.\n",
       port,
