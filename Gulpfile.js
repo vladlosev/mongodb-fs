@@ -6,7 +6,7 @@ var plugins      = require('gulp-load-plugins')();
 var SRC = {
   LIB:   ['lib/**/*.js'],
   TESTS: ['test/**/*.js', 'test/*.js'],
-  BIN:   ['bin/**/*.js']
+  BIN:   ['bin/*.js']
 };
 
 gulp.task('lint', function() {
