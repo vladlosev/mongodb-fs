@@ -32,9 +32,9 @@ describe('aggregate', function() {
 
   beforeEach(function() {
     fakeDatabase.items = [
-      {_id: id1, key: 'a', value: 1, value2: 10},
-      {_id: id2, key: 'b', value: 1, value2: 15},
-      {_id: id3, key: 'b', value: 2, value2: 25}
+      {_id: id1, key: 'a', value: 1},
+      {_id: id2, key: 'b', value: 1},
+      {_id: id3, key: 'b', value: 2}
     ];
   });
 
@@ -77,6 +77,24 @@ describe('aggregate', function() {
         expect(items).to.deep.equal([
           {_id: 'a', total: 1, total2: 10},
           {_id: 'b', total: 3, total2: 40}
+        ]);
+        done();
+    });
+  });
+
+  it('supports dates as _ids', function(done) {
+    fakeDatabase.items = [
+      {_id: id1, key: new Date('1995-08-08'), value: 1},
+      {_id: id2, key: new Date('1998-10-28'), value: 1},
+      {_id: id3, key: new Date('1998-10-28'), value: 2}
+    ];
+    Item.aggregate(
+      [{'$group': {_id: '$key', total: {'$sum': '$value'}}}],
+      function(error, items) {
+        if (error) return done(error);
+        expect(items).to.deep.equal([
+          {_id: new Date('1995-08-08'), total: 1},
+          {_id: new Date('1998-10-28'), total: 3}
         ]);
         done();
     });
