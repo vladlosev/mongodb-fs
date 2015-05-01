@@ -267,7 +267,7 @@ describe('aggregate', function() {
       });
     });
 
-    it('ignores non-existing values', function(done) {
+    it('ignores nonexistent values', function(done) {
       fakeDatabase.items = [
         {_id: id1, key: 'a', value: 1},
         {_id: id2, key: 'b', value: 5},
