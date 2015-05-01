@@ -113,6 +113,34 @@ describe('aggregate', function() {
     });
   });
 
+  it('treats missing _id keys as nulls when grouping', function(done) {
+    fakeDatabase.items = [
+      {_id: id1, key: 'a', value: 3},
+      {_id: id3, value: 5}
+    ];
+    Item.aggregate(
+      [{'$group': {_id: '$key', total: {'$sum': '$value'}}}],
+      function(error, items) {
+        if (error) return done(error);
+        expect(items).to.deep.equal([
+          {_id: 'a', total: 3},
+          {_id: null, total: 5}
+        ]);
+        done();
+    });
+  });
+
+  it('returns empty array given empty input', function(done) {
+    fakeDatabase.items = [];
+    Item.aggregate(
+      [{'$group': {_id: '$key', total: {'$sum': '$value'}}}],
+      function(error, items) {
+        if (error) return done(error);
+        expect(items).to.deep.equal([]);
+        done();
+    });
+  });
+
   it('rejects non-objects as pipeline stages', function(done) {
     Item.collection.aggregate(
       [1],
@@ -222,6 +250,70 @@ describe('aggregate', function() {
         expect(error)
           .to.have.property('message', "exception: unknown group operator 'x'");
         done();
+    });
+  });
+
+  describe('$sum', function() {
+    it('sums values in input', function(done) {
+      Item.aggregate(
+        [{'$group': {_id: '$key', total: {'$sum': '$value'}}}],
+        function(error, items) {
+          if (error) return done(error);
+          expect(items).to.deep.equal([
+            {_id: 'a', total: 1},
+            {_id: 'b', total: 3}
+          ]);
+          done();
+      });
+    });
+
+    it('ignores non-existing values', function(done) {
+      fakeDatabase.items = [
+        {_id: id1, key: 'a', value: 1},
+        {_id: id2, key: 'b', value: 5},
+        {_id: id3, key: 'b'}
+      ];
+      Item.aggregate(
+        [{'$group': {_id: '$key', total: {'$sum': '$value'}}}],
+        function(error, items) {
+          if (error) return done(error);
+          expect(items).to.deep.equal([
+            {_id: 'a', total: 1},
+            {_id: 'b', total: 5}
+          ]);
+          done();
+      });
+    });
+
+    it('ignores non-numeric values', function(done) {
+      fakeDatabase.items = [
+        {_id: id1, key: 'a', value: 1},
+        {_id: id2, key: 'b', value: 7},
+        {_id: id3, key: 'b', value: 'non a number'}
+      ];
+      Item.aggregate(
+        [{'$group': {_id: '$key', total: {'$sum': '$value'}}}],
+        function(error, items) {
+          if (error) return done(error);
+          expect(items).to.deep.equal([
+            {_id: 'a', total: 1},
+            {_id: 'b', total: 7}
+          ]);
+          done();
+      });
+    });
+
+    it('returns zero when no numeric values', function(done) {
+      Item.aggregate(
+        [{'$group': {_id: '$key', total: {'$sum': '$nonexistent'}}}],
+        function(error, items) {
+          if (error) return done(error);
+          expect(items).to.deep.equal([
+            {_id: 'a', total: 0},
+            {_id: 'b', total: 0}
+          ]);
+          done();
+      });
     });
   });
 });
