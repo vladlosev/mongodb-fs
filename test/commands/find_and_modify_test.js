@@ -122,6 +122,21 @@ describe('findAndModify', function() {
     });
   });
 
+  it('rejects invalid filters', function(done) {
+    Item.collection.findAndModify(
+      {'$eq': 2},
+      null,
+      {'$set': {a: 'new value'}},
+      function(error, item) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('name', 'MongoError');
+        expect(error)
+          .to.have.property('message')
+          .to.have.string('BadValue unknown top level operator: $eq');
+        done();
+    });
+  });
+
   it('rejects invalid requested projections', function(done) {
     Item.collection.findAndModify(
       {b: 1},

@@ -338,14 +338,26 @@ describe('update', function() {
     fakeDatabase.items = [{key: 'value1'}];
     Item.collection.update(
       {key: 'value1'},
-      {$set: {'key.k2.k3': 5 }}, function(error) {
+      {$set: {'key.k2.k3': 5}},
+      function(error) {
+        expect(error).to.exist;
+        expect(error.ok).to.be.false;
+        expect(error)
+          .to.have.property(
+            'err',
+            'cannot use the part (k2 of key.k2.k3)' +
+            " to traverse the element ({ key: 'value1' })");
+        done();
+      });
+  });
+
+  it('rejects invalid filters', function(done) {
+    fakeDatabase.items = [{key: 'value1'}];
+    Item.collection.update({'$eq': 2}, {$set: {'value': 5}}, function(error) {
       expect(error).to.exist;
       expect(error.ok).to.be.false;
       expect(error)
-        .to.have.property(
-          'err',
-          'cannot use the part (k2 of key.k2.k3)' +
-          " to traverse the element ({ key: 'value1' })");
+        .to.have.property('err', 'BadValue unknown top level operator: $eq');
       done();
     });
   });
