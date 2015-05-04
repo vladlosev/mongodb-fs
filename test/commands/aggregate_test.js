@@ -298,7 +298,7 @@ describe('aggregate', function() {
     it('reject invalid match queries', function(done) {
       Item.aggregate(
         [{'$match': {'$eq': 3}}],
-        function(error, items) {
+        function(error) {
           expect(error).to.have.property('ok', false);
           expect(error)
             .to.have.property('message')
