@@ -114,6 +114,29 @@ describe('aggregate', function() {
       });
     });
 
+    it('chains stages in a pipeline', function(done) {
+      fakeDatabase.items = [
+        {_id: id1, key: 1, value: 1},
+        {_id: id2, key: 1, value: 2},
+        {_id: id3, key: 2, value: 2},
+        {_id: id3, key: 3, value: 5}
+      ];
+      Item.aggregate(
+        [
+          {'$group': {_id: '$key', total: {'$sum': '$value'}}},
+          {'$match': {total: {'$gt': 2}}}
+        ],
+        function(error, items) {
+          if (error) return done(error);
+
+          expect(items).to.deep.equal([
+            {_id: 1, total: 3},
+            {_id: 3, total: 5}
+          ]);
+          done();
+      });
+    });
+
     it('treats missing _id keys as nulls when grouping', function(done) {
       fakeDatabase.items = [
         {_id: id1, key: 'a', value: 3},
