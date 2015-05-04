@@ -127,7 +127,7 @@ describe('findAndModify', function() {
       {'$eq': 2},
       null,
       {'$set': {a: 'new value'}},
-      function(error, item) {
+      function(error) {
         expect(error).to.have.property('ok', false);
         expect(error).to.have.property('name', 'MongoError');
         expect(error)
