@@ -282,6 +282,71 @@ describe('aggregate', function() {
     });
   });
 
+  it('rejects unknown operators', function(done) {
+    Item.collection.aggregate(
+      [{'$group': {_id: '$a', total: {'$sum': {'$dummy': 42}}}}],
+      function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 15999);
+        expect(error)
+          .to.have.property('message')
+          .to.equal("exception: invalid operator '$dummy'");
+        done();
+    });
+  });
+
+  it('rejects expressions not starting with operator', function(done) {
+    Item.collection.aggregate(
+      [{'$group': {_id: '$a', total: {'$sum': {abc: 19}}}}],
+      function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 16420);
+        expect(error)
+          .to.have.property('message')
+          .to.have.string(
+            'exception: field inclusion is not allowed inside of $expressions');
+        done();
+    });
+  });
+
+  it('rejects extra fields in operator expressions', function(done) {
+    Item.collection.aggregate(
+      [{
+        '$group': {
+          _id: '$a',
+          total: {'$sum': {'$ifNull': ['$a', 42], abc: 19}}
+      }}],
+      function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 15990);
+        expect(error)
+          .to.have.property('message')
+          .to.have.string(
+            'exception: this object is already an operator expression, ' +
+            "and can't be used as a document expression (at 'abc')");
+        done();
+    });
+  });
+
+  it('rejects extra unknown operators in operator expressions', function(done) {
+    Item.collection.aggregate(
+      [{
+        '$group': {
+          _id: '$a',
+          total: {'$sum': {'$ifNull': ['$a', 42], '$abc': ['$c', 55]}}
+      }}],
+      function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 15983);
+        expect(error)
+          .to.have.property('message')
+          .to.have.string(
+            'exception: the operator must be the only field ' +
+            "in a pipeline object (at '$abc'");
+        done();
+    });
+  });
+
   describe('$match', function() {
     it('filters documents', function(done) {
       assertAggregationResults(
@@ -585,6 +650,85 @@ describe('aggregate', function() {
           {_id: 'b', result: 7}
         ],
         done);
+    });
+  });
+
+  describe('$ifNull', function() {
+    it('provides default for missing values', function(done) {
+      assertAggregationResults(
+        [
+          {_id: id1, key: 'a', value: 5},
+          {_id: id2, key: 'a'}
+        ],
+        [{
+          '$group': {
+            _id: '$key',
+            result: {'$sum': {'$ifNull': ['$value', 100]}}
+        }}],
+        [{_id: 'a', result: 105}],
+        done);
+    });
+
+    it('provides default for null values', function(done) {
+      assertAggregationResults(
+        [
+          {_id: id1, key: 'a', value: 5},
+          {_id: id2, key: 'a', value: null}
+        ],
+        [{
+          '$group': {
+            _id: '$key',
+            result: {'$sum': {'$ifNull': ['$value', 200]}}
+        }}],
+        [{_id: 'a', result: 205}],
+        done);
+    });
+
+    it('recursively computes second parameter', function(done) {
+      assertAggregationResults(
+        [
+          {_id: id1, key: 'a', value: 5},
+          {_id: id2, key: 'a'}
+        ],
+        [{
+          '$group': {
+            _id: '$key',
+            result: {
+              '$sum': {'$ifNull': ['$value', {'$ifNull': ['$value2', 50]}]}
+            }
+        }}],
+        [{_id: 'a', result: 55}],
+        done);
+    });
+
+    it('rejects non-array parameters', function(done) {
+      Item.collection.aggregate(
+        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': 18}}}}],
+        function(error) {
+          expect(error).to.have.property('ok', false);
+          expect(error).to.have.property('code', 16020);
+          expect(error)
+            .to.have.property('message')
+            .to.equal(
+              'exception: Expression $ifNull takes exactly 2 arguments. ' +
+              '1 were passed in.');
+          done();
+      });
+    });
+
+    it('rejects numeber of parameters other than two', function(done) {
+      Item.collection.aggregate(
+        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': ['$b', 12, 25]}}}}],
+        function(error) {
+          expect(error).to.have.property('ok', false);
+          expect(error).to.have.property('code', 16020);
+          expect(error)
+            .to.have.property('message')
+            .to.equal(
+              'exception: Expression $ifNull takes exactly 2 arguments. ' +
+              '3 were passed in.');
+          done();
+      });
     });
   });
 });
