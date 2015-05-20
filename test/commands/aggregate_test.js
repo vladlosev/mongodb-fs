@@ -32,6 +32,21 @@ describe('aggregate', function() {
     });
   }
 
+  function assertAggregationError(input, operation, code, message, done) {
+    fakeDatabase.items = input;
+
+    Item.aggregate(
+      operation,
+      function(error) {
+        expect(error).to.have.property('ok', false);
+        code && expect(error).to.have.property('code', code);
+        expect(error)
+          .to.have.property('message')
+          .to.equal(message);
+        done();
+    });
+  }
+
   function assertSumResults(input, results, done) {
     assertAggregationResults(
       input,
@@ -210,141 +225,98 @@ describe('aggregate', function() {
     });
 
     it('rejects group specification without _id', function(done) {
-      Item.collection.aggregate(
+      assertAggregationError(
+        [],
         [{'$group': {total: {'$sum': 1}}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 15955);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string(
-              'exception: a group specification must include an _id');
-          done();
-      });
+        15955,
+        'exception: a group specification must include an _id',
+        done);
     });
 
     it('rejects invalid group aggregate field expressions', function(done) {
-      Item.collection.aggregate(
+      assertAggregationError(
+        [],
         [{'$group': {_id: '$a', total: 1}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 15951);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string(
-              "exception: the group aggregate field 'total' " +
-              'must be defined as an expression inside an object');
-          done();
-      });
+        15951,
+        "exception: the group aggregate field 'total' " +
+        'must be defined as an expression inside an object',
+        done);
     });
 
     it('rejects empty computed aggregate', function(done) {
-      Item.collection.aggregate(
+      assertAggregationError(
+        [],
         [{'$group': {_id: '$a', total: {}}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 15954);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string(
-              "exception: the computed aggregate 'total' " +
-              'must specify exactly one operator');
-          done();
-      });
+        15954,
+        "exception: the computed aggregate 'total' " +
+        'must specify exactly one operator',
+        done);
     });
 
     it('rejects computed aggregate with multiple keys', function(done) {
-      Item.collection.aggregate(
+      assertAggregationError(
+        [],
         [{'$group': {_id: '$a', total: {'$sum': '$a', '$max': '$a'}}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 15954);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string(
-              "exception: the computed aggregate 'total' " +
-              'must specify exactly one operator');
-          done();
-      });
+        15954,
+        "exception: the computed aggregate 'total' " +
+        'must specify exactly one operator',
+        done);
     });
 
-    it('rejects computed aggregate with multiple keys', function(done) {
-      Item.collection.aggregate(
+    it('rejects computed aggregate non-operator keys', function(done) {
+      assertAggregationError(
+        [],
         [{'$group': {_id: '$a', total: {x: '$b'}}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 15952);
-          expect(error)
-            .to.have.property('message')
-            .to.equal("exception: unknown group operator 'x'");
-          done();
-      });
+        15952,
+        "exception: unknown group operator 'x'",
+        done);
     });
   });
 
   it('rejects unknown operators', function(done) {
-    Item.collection.aggregate(
+    assertAggregationError(
+      [],
       [{'$group': {_id: '$a', total: {'$sum': {'$dummy': 42}}}}],
-      function(error) {
-        expect(error).to.have.property('ok', false);
-        expect(error).to.have.property('code', 15999);
-        expect(error)
-          .to.have.property('message')
-          .to.equal("exception: invalid operator '$dummy'");
-        done();
-    });
+      15999,
+      "exception: invalid operator '$dummy'",
+      done);
   });
 
   it('rejects expressions not starting with operator', function(done) {
-    Item.collection.aggregate(
+    assertAggregationError(
+      [],
       [{'$group': {_id: '$a', total: {'$sum': {abc: 19}}}}],
-      function(error) {
-        expect(error).to.have.property('ok', false);
-        expect(error).to.have.property('code', 16420);
-        expect(error)
-          .to.have.property('message')
-          .to.have.string(
-            'exception: field inclusion is not allowed inside of $expressions');
-        done();
-    });
+      16420,
+      'exception: field inclusion is not allowed inside of $expressions',
+      done);
   });
 
   it('rejects extra fields in operator expressions', function(done) {
-    Item.collection.aggregate(
+    assertAggregationError(
+      [],
       [{
         '$group': {
           _id: '$a',
           total: {'$sum': {'$ifNull': ['$a', 42], abc: 19}}
       }}],
-      function(error) {
-        expect(error).to.have.property('ok', false);
-        expect(error).to.have.property('code', 15990);
-        expect(error)
-          .to.have.property('message')
-          .to.have.string(
-            'exception: this object is already an operator expression, ' +
-            "and can't be used as a document expression (at 'abc')");
-        done();
-    });
+      15990,
+      'exception: this object is already an operator expression, ' +
+      "and can't be used as a document expression (at 'abc')",
+      done);
   });
 
   it('rejects extra unknown operators in operator expressions', function(done) {
-    Item.collection.aggregate(
+    assertAggregationError(
+      [],
       [{
         '$group': {
           _id: '$a',
           total: {'$sum': {'$ifNull': ['$a', 42], '$abc': ['$c', 55]}}
       }}],
-      function(error) {
-        expect(error).to.have.property('ok', false);
-        expect(error).to.have.property('code', 15983);
-        expect(error)
-          .to.have.property('message')
-          .to.have.string(
-            'exception: the operator must be the only field ' +
-            "in a pipeline object (at '$abc'");
-        done();
-    });
+      15983,
+      'exception: the operator must be the only field ' +
+      "in a pipeline object (at '$abc'",
+      done);
   });
 
   describe('$match', function() {
@@ -376,15 +348,12 @@ describe('aggregate', function() {
     });
 
     it('reject invalid match queries', function(done) {
-      Item.aggregate(
+      assertAggregationError(
+        fakeDatabase.items,
         [{'$match': {'$eq': 3}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error)
-            .to.have.property('message')
-            .to.match(/BadValue unknown top level operator: \$eq/);
-          done();
-      });
+        undefined,
+        'BadValue unknown top level operator: $eq',
+        done);
     });
   });
 
@@ -702,33 +671,121 @@ describe('aggregate', function() {
     });
 
     it('rejects non-array parameters', function(done) {
-      Item.collection.aggregate(
+      assertAggregationError(
+        [],
         [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': 18}}}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 16020);
-          expect(error)
-            .to.have.property('message')
-            .to.equal(
-              'exception: Expression $ifNull takes exactly 2 arguments. ' +
-              '1 were passed in.');
-          done();
-      });
+        16020,
+        'exception: Expression $ifNull takes exactly 2 arguments. ' +
+        '1 were passed in.',
+        done);
     });
 
     it('rejects numeber of parameters other than two', function(done) {
-      Item.collection.aggregate(
+      assertAggregationError(
+        [],
         [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': ['$b', 12, 25]}}}}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 16020);
-          expect(error)
-            .to.have.property('message')
-            .to.equal(
-              'exception: Expression $ifNull takes exactly 2 arguments. ' +
-              '3 were passed in.');
-          done();
-      });
+        16020,
+        'exception: Expression $ifNull takes exactly 2 arguments. ' +
+        '3 were passed in.',
+        done);
+    });
+  });
+
+  describe('$size', function() {
+    it('calculates size of an array expression', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', value: [42, 36]}],
+        [{'$group': {_id: '$key', result: {'$sum': {'$size': '$value'}}}}],
+        [{_id: 'a', result: 2}],
+        done);
+    });
+
+    it('accepts argument in an array', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', value: [42, 36]}],
+        [{'$group': {_id: '$key', result: {'$sum': {'$size': ['$value']}}}}],
+        [{_id: 'a', result: 2}],
+        done);
+    });
+
+    it('rejects empty array argument', function(done) {
+      assertAggregationError(
+        [],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': []}}}}],
+        16020,
+        'exception: Expression $size takes exactly 1 arguments. ' +
+        '0 were passed in.',
+        done);
+    });
+
+    it('rejects array with multiple arguments', function(done) {
+      assertAggregationError(
+        [],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': ['$value', '$b']}}}}],
+        16020,
+        'exception: Expression $size takes exactly 1 arguments. ' +
+        '2 were passed in.',
+        done);
+    });
+
+    it('rejects missing fields', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', othervalue: 1}],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': ['$value']}}}}],
+        17124,
+        'exception: The argument to $size must be an Array, ' +
+        'but was of type: EOO',
+        done);
+    });
+
+    it('rejects objects', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: {x: 1}}],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': ['$value']}}}}],
+        17124,
+        'exception: The argument to $size must be an Array, ' +
+        'but was of type: Object',
+        done);
+    });
+
+    it('rejects strings', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: 'abc'}],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': ['$value']}}}}],
+        17124,
+        'exception: The argument to $size must be an Array, ' +
+        'but was of type: String',
+        done);
+    });
+
+    it('rejects numbers', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: 42}],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': ['$value']}}}}],
+        17124,
+        'exception: The argument to $size must be an Array, ' +
+        'but was of type: NumberDouble',
+        done);
+    });
+
+    it('rejects dates', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: new Date()}],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': ['$value']}}}}],
+        17124,
+        'exception: The argument to $size must be an Array, ' +
+        'but was of type: Date',
+        done);
+    });
+
+    it('rejects Booleans', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': ['$value']}}}}],
+        17124,
+        'exception: The argument to $size must be an Array, ' +
+        'but was of type: Bool',
+        done);
     });
   });
 });
