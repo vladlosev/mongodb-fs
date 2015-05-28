@@ -869,7 +869,8 @@ describe('aggregate', function() {
                 '$cond': {
                   'if': '$value',
                   'then': {'$ifNull': ['$backup', 100]},
-                  'else': 1}
+                  'else': 1
+                }
               }
             }
           }
@@ -889,7 +890,8 @@ describe('aggregate', function() {
                 '$cond': {
                   'if': '$value',
                   'then': 10,
-                  'else': {'$ifNull': ['$backup', 100]}}
+                  'else': {'$ifNull': ['$backup', 100]}
+                }
               }
             }
           }
