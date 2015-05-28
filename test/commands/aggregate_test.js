@@ -788,4 +788,214 @@ describe('aggregate', function() {
         done);
     });
   });
+
+  describe('$cond', function() {
+    function assertCondResult(value, result, done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', value: value}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': {'if': '$value', then: 10, 'else': 1}}}
+          }
+        }],
+        [{_id: 'a', total: result ? 10 : 1}],
+        done);
+    }
+
+    it('returns if value when condition is true', function(done) {
+      assertCondResult(true, true, done);
+    });
+
+    it('returns else value when condition is false', function(done) {
+      assertCondResult(false, false, done);
+    });
+
+    it('treats zero as false', function(done) {
+      assertCondResult(0, false, done);
+    });
+
+    it('treats null as false', function(done) {
+      assertCondResult(null, false, done);
+    });
+
+    it('treats non-zero number as true', function(done) {
+      assertCondResult(3, true, done);
+    });
+
+    it('treats dates as true', function(done) {
+      // Even a date with the timestamp of zero is treated as true.
+      assertCondResult(new Date(0), true, done);
+    });
+
+    it('treats objects as true', function(done) {
+      // Even empty object is treated as true.
+      assertCondResult({}, true, done);
+    });
+
+    it('treats arrays as true', function(done) {
+      // Even empty array is treated as true.
+      assertCondResult([], true, done);
+    });
+
+    it('accepts arguments in array', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {_id: '$key', total: {'$sum': {'$cond': ['$value', 10, 1]}}}
+        }],
+        [{_id: 'a', total: 10}],
+        done);
+    });
+
+    it('accepts arguments in array with else branch', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', value: false}],
+        [{
+          '$group': {_id: '$key', total: {'$sum': {'$cond': ['$value', 10, 1]}}}
+        }],
+        [{_id: 'a', total: 1}],
+        done);
+    });
+
+    it('recursively computes expressions in then branch', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {
+              '$sum': {
+                '$cond': {
+                  'if': '$value',
+                  'then': {'$ifNull': ['$backup', 100]},
+                  'else': 1}
+              }
+            }
+          }
+        }],
+        [{_id: 'a', total: 100}],
+        done);
+    });
+
+    it('recursively computes expressions in then branch', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', value: false, backup: 50}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {
+              '$sum': {
+                '$cond': {
+                  'if': '$value',
+                  'then': 10,
+                  'else': {'$ifNull': ['$backup', 100]}}
+              }
+            }
+          }
+        }],
+        [{_id: 'a', total: 50}],
+        done);
+    });
+
+    it('rejects missing if parameter', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': {then: 10, 'else': 1}}}
+          }
+        }],
+        17080,
+        "exception: Missing 'if' parameter to $cond",
+        done);
+    });
+
+    it('rejects missing then parameter', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': {'if': '$value', 'else': 1}}}
+          }
+        }],
+        17080,
+        "exception: Missing 'then' parameter to $cond",
+        done);
+    });
+
+    it('rejects missing else parameter', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': {'if': '$value', 'then': 10}}}
+          }
+        }],
+        17080,
+        "exception: Missing 'else' parameter to $cond",
+        done);
+    });
+
+    it('rejects extra parameters', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {
+              '$sum': {
+                '$cond': {'if': '$value', 'then': 10, 'else': 1, otherwise: 3}
+              }
+            }
+          }
+        }],
+        17083,
+        'exception: Unrecognized parameter to $cond: otherwise',
+        done);
+    });
+
+    it('rejects bad number of array arguments', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': ['$value', 10]}}
+          }
+        }],
+        16020,
+        'exception: Expression $cond takes exactly 3 arguments. ' +
+        '2 were passed in.',
+        done);
+    });
+
+    it('rejects scalar parameter', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{'$group': {_id: '$key', total: {'$sum': {'$cond': 22}}}}],
+        16020,
+        'exception: Expression $cond takes exactly 3 arguments. ' +
+        '1 were passed in.',
+        done);
+    });
+
+    it('rejects argument object inside array', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': [{'if': '$value', then: 10, 'else': 1}]}}
+          }
+        }],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+      done();
+    });
+  });
 });
