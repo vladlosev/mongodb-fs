@@ -582,6 +582,53 @@ describe('aggregate', function() {
         done);
     });
 
+    it('compares ObjectIds', function(done) {
+      var idCompare1 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+      var idCompare2 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf2');
+
+      assertMaxResults(
+        [
+          {_id: id2, key: 'a', value: idCompare2},
+          {_id: id1, key: 'a', value: idCompare1}
+        ],
+        [{_id: 'a', result: idCompare2}],
+        done);
+    });
+
+    it('ranks ObjectIds higher than dates', function(done) {
+      var id = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+
+      assertMaxResults(
+        [
+          {_id: id2, key: 'a', value: [1]},
+          {_id: id1, key: 'a', value: id}
+        ],
+        [{_id: 'a', result: id}],
+        done);
+    });
+
+    it('ranks true higher than false', function(done) {
+      assertMaxResults(
+        [
+          {_id: id2, key: 'a', value: true},
+          {_id: id1, key: 'a', value: false}
+        ],
+        [{_id: 'a', result: true}],
+        done);
+    });
+
+    it('ranks Booleans higher than ObjectIds', function(done) {
+      var id = new mongoose.Types.ObjectId();
+
+      assertMaxResults(
+        [
+          {_id: id2, key: 'a', value: id},
+          {_id: id1, key: 'a', value: false}
+        ],
+        [{_id: 'a', result: false}],
+        done);
+    });
+
     it('calculates value for dates', function(done) {
       assertMaxResults(
         [
@@ -592,10 +639,10 @@ describe('aggregate', function() {
         done);
     });
 
-    it('ranks dates higher than arrays', function(done) {
+    it('ranks dates higher than Booleans', function(done) {
       assertMaxResults(
         [
-          {_id: id2, key: 'a', value: [1]},
+          {_id: id2, key: 'a', value: true},
           {_id: id1, key: 'a', value: new Date('2009-10-01')}
         ],
         [{_id: 'a', result: new Date('2009-10-01')}],
