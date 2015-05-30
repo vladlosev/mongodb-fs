@@ -727,13 +727,31 @@ describe('aggregate', function() {
         done);
     });
 
-    it('rejects numeber of parameters other than two', function(done) {
+    it('rejects number of parameters other than two', function(done) {
       assertAggregationError(
         [],
         [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': ['$b', 12, 25]}}}}],
         16020,
         'exception: Expression $ifNull takes exactly 2 arguments. ' +
         '3 were passed in.',
+        done);
+    });
+
+    it('validates first parameter recursively', function(done) {
+      assertAggregationError(
+        [],
+        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': [{a: 1}, 12]}}}}],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+
+    it('validates second parameter recursively', function(done) {
+      assertAggregationError(
+        [],
+        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': ['$b', {a: 1}]}}}}],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
         done);
     });
   });
@@ -772,6 +790,15 @@ describe('aggregate', function() {
         16020,
         'exception: Expression $size takes exactly 1 arguments. ' +
         '2 were passed in.',
+        done);
+    });
+
+    it('recursively validates argument', function(done) {
+      assertAggregationError(
+        [],
+        [{'$group': {_id: '$a', total: {'$sum': {'$size': {a: 1}}}}}],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
         done);
     });
 
@@ -1044,7 +1071,95 @@ describe('aggregate', function() {
         16420,
         'exception: field inclusion is not allowed inside of $expressions',
         done);
-      done();
+    });
+
+    it('validates first parameter recursively', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {_id: '$key', total: {'$sum': {'$cond': [{a: 1}, 10, 1]}}}
+        }],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+
+    it('validates second parameter recursively', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': ['$value', {a: 1}, 1]}}
+          }
+        }],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+
+    it('validates third parameter recursively', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': ['$value', 10, {a: 1}]}}
+          }
+        }],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+
+    it('validates if parameter recursively', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {'$sum': {'$cond': {'if': {a: 1}, then: 10, 'else': 1}}}
+          }
+        }],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+
+    it('validates then parameter recursively', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {
+              '$sum': {
+                '$cond': {'if': '$value', then: {a: 1}, 'else': 1}
+              }
+            }
+          }
+        }],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+
+    it('validates else parameter recursively', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a', value: true}],
+        [{
+          '$group': {
+            _id: '$key',
+            total: {
+              '$sum': {
+                '$cond': {'if': '$value', then: 10, 'else': {a: 1}}
+              }
+            }
+          }
+        }],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
     });
   });
 });
