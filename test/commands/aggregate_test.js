@@ -717,15 +717,6 @@ describe('aggregate', function() {
         done);
     });
 
-    it('rejects parameter if non-operator object', function(done) {
-      assertAggregationError(
-        [],
-        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': {a: 1}}}}}],
-        16420,
-        'exception: field inclusion is not allowed inside of $expressions',
-        done);
-    });
-
     it('rejects non-array parameters', function(done) {
       assertAggregationError(
         [],
@@ -746,10 +737,19 @@ describe('aggregate', function() {
         done);
     });
 
+    it('validates parameter recursively if non-array', function(done) {
+      assertAggregationError(
+        [],
+        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': {a: 1}}}}}],
+        16420,
+        'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+
     it('validates first parameter recursively', function(done) {
       assertAggregationError(
         [],
-        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': [{a: 1}, 12]}}}}],
+        [{'$group': {_id: '$a', total: {'$sum': {'$ifNull': [{a: 1}]}}}}],
         16420,
         'exception: field inclusion is not allowed inside of $expressions',
         done);
