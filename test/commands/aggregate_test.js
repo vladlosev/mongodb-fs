@@ -2,6 +2,7 @@
 
 var chai = require('chai');
 var mongoose = require('mongoose');
+var Promise = require('bluebird');
 
 var TestHarness = require('../test_harness');
 
@@ -53,6 +54,32 @@ describe('aggregate', function() {
       [{'$group': {_id: '$key', total: {'$sum': '$value'}}}],
       results,
       done);
+  }
+
+  function assertComparisonResult(operator, lhs, rhs, result) {
+    var operatorExpression = {};
+    operatorExpression[operator] = ['$valueLhs', '$valueRhs'];
+
+    return new Promise(function(resolve, reject) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a', valueLhs: lhs, valueRhs: rhs}],
+        [{'$group': {_id: '$key', result: {'$max': operatorExpression}}}],
+        [{_id: 'a', result: result}],
+        function(error) {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+    });
+  }
+
+  function assertStrictComparisonResult(operator, lhs, rhs, result) {
+    return assertComparisonResult(operator, lhs, rhs, result)
+      .then(function() {
+        return assertComparisonResult(operator, rhs, lhs, !result);
+      });
   }
 
   before(function(done) {
@@ -552,7 +579,7 @@ describe('aggregate', function() {
         done);
     });
 
-    it('ranks elements lexicographically', function(done) {
+    it('ranks array elements lexicographically', function(done) {
       assertMaxResults(
         [
           {_id: id2, key: 'a', value: [1]},
@@ -595,7 +622,7 @@ describe('aggregate', function() {
         done);
     });
 
-    it('ranks ObjectIds higher than dates', function(done) {
+    it('ranks ObjectIds higher than arrays', function(done) {
       var id = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
 
       assertMaxResults(
@@ -1168,6 +1195,300 @@ describe('aggregate', function() {
         }],
         16420,
         'exception: field inclusion is not allowed inside of $expressions',
+        done);
+    });
+  });
+
+  describe('$eq', function() {
+    it('returns true on equal values', function() {
+      return assertComparisonResult('$eq', 5, 5, true);
+    });
+
+    it('returns false on unequal values', function() {
+      return assertComparisonResult('$eq', 5, 4, false);
+    });
+
+    it('compares objects recursively', function() {
+      return assertComparisonResult('$eq', {a: 1}, {a: 1}, true);
+    });
+
+    it('compares arrays recursively', function() {
+      return assertComparisonResult('$eq', [1, 2], [1, 2], true);
+    });
+
+    it('evaluates arguments recursively', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a'}],
+        [{
+          '$group': {
+            _id: '$key',
+            result: {
+              '$max': {
+                '$eq': [
+                  {'$ifNull': ['$valueLhs', 3]},
+                  {'$ifNull': ['$valueRhs', 3]}
+                ]
+              }
+            }
+          }
+        }],
+        [{_id: 'a', result: true}],
+        done);
+    });
+
+    // $eq shares validation code with other operators so we just perform a
+    // minimal check here.
+    it('rejects number of arguments other than two', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a'}],
+        [{'$group': {_id: '$key', result: {'$max': {'$eq': [3, 4, 5]}}}}],
+        16020,
+        'exception: Expression $eq takes exactly 2 arguments. ' +
+        '3 were passed in.',
+        done);
+    });
+  });
+
+  describe('$ne', function() {
+    it('returns false on equal values', function() {
+      return assertComparisonResult('$ne', 5, 5, false);
+    });
+
+    it('returns true on unequal values', function() {
+      return assertComparisonResult('$ne', 5, 4, true);
+    });
+
+    it('compares objects recursively', function() {
+      return assertComparisonResult('$ne', {a: 1}, {a: 1}, false);
+    });
+
+    it('compares arrays recursively', function() {
+      return assertComparisonResult('$ne', [1, 2], [1, 2], false);
+    });
+
+    it('evaluates arguments recursively', function(done) {
+      assertAggregationResults(
+        [{_id: id1, key: 'a'}],
+        [{
+          '$group': {
+            _id: '$key',
+            result: {
+              '$max': {
+                '$ne': [
+                  {'$ifNull': ['$valueLhs', 3]},
+                  {'$ifNull': ['$valueRhs', 3]}
+                ]
+              }
+            }
+          }
+        }],
+        [{_id: 'a', result: false}],
+        done);
+    });
+
+    it('rejects number of arguments other than two', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a'}],
+        [{'$group': {_id: '$key', result: {'$max': {'$ne': [3, 4, 5]}}}}],
+        16020,
+        'exception: Expression $ne takes exactly 2 arguments. ' +
+        '3 were passed in.',
+        done);
+    });
+  });
+
+  describe('$lt', function() {
+    it('returns true when lhs is less than rhs', function() {
+      return assertStrictComparisonResult('$lt', 3, 5, true);
+    });
+
+    it('returns false when arguments are equal', function() {
+      return assertComparisonResult('$lt', 5, 5, false);
+    });
+
+    it('ranks numbers higher than null', function() {
+      return assertStrictComparisonResult('$lt', null, 5, true);
+    });
+
+    it('ranks strings higher than numbers', function() {
+      return assertStrictComparisonResult('$lt', 4, '4', true);
+    });
+
+    it('ranks object higher than strings', function() {
+      return assertStrictComparisonResult('$lt', 'abc', {a: 1}, true);
+    });
+
+    it('ranks objects on key values in same positions', function() {
+      return assertStrictComparisonResult('$lt', {a: 1}, {b: 0, a: 0}, true);
+    });
+
+    it('ranks objects with equal keys on values', function() {
+      return assertStrictComparisonResult('$lt', {b: 0, a: 0}, {b: 1}, true);
+    });
+
+    it('compares objects recursively', function() {
+      return assertStrictComparisonResult(
+        '$lt',
+        {b: {x: 1}},
+        {b: {x: 2}},
+        true);
+    });
+
+    it('ranks prefix objects lower', function() {
+      return assertStrictComparisonResult('$lt', {a: 1}, {a: 1, b: 2}, true);
+    });
+
+    it('ranks arrays higher than objects', function() {
+      return assertStrictComparisonResult('$lt', {a: 1}, [1], true);
+    });
+
+    it('ranks array elements lexicographically', function() {
+      return assertStrictComparisonResult('$lt', [1], [2], true);
+    });
+
+    it('performs recursive comparison of array elements', function() {
+      return assertStrictComparisonResult('$lt', [{a: 1}], [{b: 1}], true);
+    });
+
+    it('ranks prefix arrays lower', function() {
+      return assertStrictComparisonResult('$lt', ['x'], ['x', 1], true);
+    });
+
+    it('compares ObjectIds', function() {
+      var idCompare1 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+      var idCompare2 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf2');
+      return assertStrictComparisonResult('$lt', idCompare1, idCompare2, true);
+    });
+
+    it('ranks ObjectIds higher than arrays', function() {
+      var id = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+      return assertStrictComparisonResult('$lt', ['x'], id, true);
+    });
+
+    it('ranks true higher than false', function() {
+      return assertStrictComparisonResult('$lt', false, true, true);
+    });
+
+    it('ranks Booleans higher than ObjectIds', function() {
+      var id = new mongoose.Types.ObjectId();
+      return assertStrictComparisonResult('$lt', id, false, true);
+    });
+
+    it('compares dates', function() {
+      return assertStrictComparisonResult(
+        '$lt',
+        new Date('1998-11-28'),
+        new Date('2009-10-01'),
+        true);
+    });
+
+    it('ranks dates higher than Booleans', function() {
+      return assertStrictComparisonResult(
+        '$lt',
+        true,
+        new Date('2009-10-01'),
+        true);
+    });
+
+    it('rejects number of arguments other than two', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a'}],
+        [{'$group': {_id: '$key', result: {'$max': {'$lt': [3, 4, 5]}}}}],
+        16020,
+        'exception: Expression $lt takes exactly 2 arguments. ' +
+        '3 were passed in.',
+        done);
+    });
+  });
+
+  describe('$lte', function() {
+    it('returns true when lhs is less than rhs', function() {
+      return assertComparisonResult('$lte', 3, 5, true);
+    });
+
+    it('returns false when lhs is greater than rhs', function() {
+      return assertComparisonResult('$lte', 5, 3, false);
+    });
+
+    it('returns true when lhs is equal to rhs', function() {
+      return assertComparisonResult('$lte', 5, 5, true);
+    });
+
+    it('rejects number of arguments other than two', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a'}],
+        [{'$group': {_id: '$key', result: {'$max': {'$lte': [3, 4, 5]}}}}],
+        16020,
+        'exception: Expression $lte takes exactly 2 arguments. ' +
+        '3 were passed in.',
+        done);
+    });
+  });
+
+  describe('$gt', function() {
+    it('returns true when lhs is greater than rhs', function() {
+      return assertStrictComparisonResult('$gt', 5, 3, true);
+    });
+
+    it('returns false when arguments are equal', function() {
+      return assertComparisonResult('$gt', 5, 5, false);
+    });
+
+    it('rejects number of arguments other than two', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a'}],
+        [{'$group': {_id: '$key', result: {'$max': {'$gt': [3, 4, 5]}}}}],
+        16020,
+        'exception: Expression $gt takes exactly 2 arguments. ' +
+        '3 were passed in.',
+        done);
+    });
+  });
+
+  describe('$lte', function() {
+    it('returns true when lhs is less than rhs', function() {
+      return assertComparisonResult('$gte', 5, 3, true);
+    });
+
+    it('returns false when lhs is greater than rhs', function() {
+      return assertComparisonResult('$gte', 3, 5, false);
+    });
+
+    it('returns true when lhs is equal to rhs', function() {
+      return assertComparisonResult('$gte', 5, 5, true);
+    });
+
+    it('rejects number of arguments other than two', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a'}],
+        [{'$group': {_id: '$key', result: {'$max': {'$gte': [3, 4, 5]}}}}],
+        16020,
+        'exception: Expression $gte takes exactly 2 arguments. ' +
+        '3 were passed in.',
+        done);
+    });
+  });
+
+  describe('$cmp', function() {
+    it('returns -1 when lhs is less than rhs', function() {
+      return assertComparisonResult('$cmp', 3, 5, -1);
+    });
+
+    it('returns 1 when lhs is greater than rhs', function() {
+      return assertComparisonResult('$cmp', 5, 3, 1);
+    });
+
+    it('returns 0 when lhs is equal to rhs', function() {
+      return assertComparisonResult('$cmp', 5, 5, 0);
+    });
+
+    it('rejects number of arguments other than two', function(done) {
+      assertAggregationError(
+        [{_id: id1, key: 'a'}],
+        [{'$group': {_id: '$key', result: {'$max': {'$cmp': [3, 4, 5]}}}}],
+        16020,
+        'exception: Expression $cmp takes exactly 2 arguments. ' +
+        '3 were passed in.',
         done);
     });
   });

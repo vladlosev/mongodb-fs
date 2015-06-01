@@ -42,6 +42,7 @@
     "log4js": "~0.6.22"
   },
   "devDependencies": {
+    "bluebird": "^2.9.27",
     "chai": "~2.1.1",
     "chai-properties": "~1.2.0",
     "gulp": "^3.8.11",
