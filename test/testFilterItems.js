@@ -1443,4 +1443,12 @@ describe('filterItems', function() {
       }
     });
   });
+
+  it('combines multiple operators in `and` connection', function() {
+    var items = [{_id: 1, a: 5}, {_id: 2, a: 15}, {_id: 3, a: 25}];
+    var filtered = filter.filterItems(
+      items,
+      {a: {'$gt': 10, '$lt': 20}});
+    expect(_.pluck(filtered, '_id')).to.deep.equal([2]);
+  });
 });

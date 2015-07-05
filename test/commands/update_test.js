@@ -320,6 +320,88 @@ describe('update', function() {
       });
   });
 
+  it('$pull by query removes multiple values', function(done) {
+    fakeDatabase.items = [{_id: id1, key: [1, 11, 2, 12, 3, 13, 4]}];
+    Item.collection.update(
+      {},
+      {$pull: {key: {'$gt': 10}}},
+      function(error) {
+        if (error) return done(error);
+        expect(fakeDatabase.items).to.have.length(1);
+        expect(fakeDatabase.items[0])
+          .to.have.property('key')
+          .to.deep.equal([1, 2, 3, 4]);
+        done();
+      });
+  });
+
+  it('$pull by query removes repeated values', function(done) {
+    fakeDatabase.items = [{_id: id1, key: [1, 13, 2, 13, 3, 13]}];
+    Item.collection.update(
+      {},
+      {$pull: {key: {'$gt': 10}}},
+      function(error) {
+        if (error) return done(error);
+        expect(fakeDatabase.items).to.have.length(1);
+        expect(fakeDatabase.items[0])
+          .to.have.property('key')
+          .to.deep.equal([1, 2, 3]);
+        done();
+      });
+  });
+
+  it('$pull by query works with subfields', function(done) {
+    fakeDatabase.items = [{_id: id1, key: {a: [1, 2, 10, 20]}}];
+    Item.collection.update(
+      {},
+      {$pull: {'key.a': {'$lt': 10}}},
+      function(error) {
+        if (error) return done(error);
+        expect(fakeDatabase.items).to.have.length(1);
+        expect(fakeDatabase.items[0])
+          .to.have.deep.property('key')
+          .to.deep.equal({a: [10, 20]});
+        done();
+      });
+  });
+
+  it('$pull by query removes documents from array', function(done) {
+    fakeDatabase.items = [{
+      _id: id1,
+      key: [{a: 1}, {a: 2}, {a: 10}, {a: 20}]
+    }];
+    Item.collection.update(
+      {},
+      {$pull: {'key': {a: {'$lt': 10}}}},
+      function(error) {
+        if (error) return done(error);
+        expect(fakeDatabase.items).to.have.length(1);
+        expect(fakeDatabase.items[0])
+          .to.have.deep.property('key')
+          .to.deep.equal([{a: 10}, {a: 20}]);
+        done();
+      });
+  });
+
+  it('$pull by query removes documents from array using top level operator',
+    function(done) {
+      fakeDatabase.items = [{
+        _id: id1,
+        key: [{a: 5}, {a: 15}, {a: 25}]
+      }];
+      Item.collection.update(
+        {},
+        {$pull: {key: {'$or': [{a: {'$lt': 10}}, {a: {'$gt': 20}}]}}},
+        function(error) {
+          if (error) return done(error);
+          expect(fakeDatabase.items).to.have.length(1);
+          expect(fakeDatabase.items[0])
+            .to.have.deep.property('key')
+            .to.deep.equal([{a: 15}]);
+          done();
+        });
+  });
+
   it('$pull from non-array fails', function(done) {
     fakeDatabase.items = [{key: ['value1', 'value2']}];
     Item.collection.update({}, {$pull: {'key.1': 'a'}}, function(error) {
