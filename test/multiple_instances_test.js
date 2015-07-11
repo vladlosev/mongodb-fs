@@ -3,7 +3,7 @@
 var chai = require('chai');
 var mongoose = require('mongoose');
 var path = require('path');
-var MongoDbFs = require('../lib/mongodb-fs');
+var MongoDbFs = require('../lib/server');
 
 var logConfig = {
   level: process.env.LOG_LEVEL || 'warn',
