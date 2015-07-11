@@ -3,7 +3,7 @@
 var mongoose = require('mongoose');
 var util     = require('util');
 
-var mongodbFs = require('../lib/mongodb-fs');
+var mongodbFs = require('../lib/server');
 
 /* eslint-disable no-console */
 

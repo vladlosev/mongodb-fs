@@ -11,7 +11,7 @@
     "test"
   ],
   "homepage": "https://github.com/vladlosev/mongodb-fs",
-  "main": "lib/mongodb-fs.js",
+  "main": "lib/server.js",
   "scripts": {
     "test": "mocha test/*_test.js test/commands/*_test.js",
     "lint": "gulp lint"

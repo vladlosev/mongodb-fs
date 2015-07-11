@@ -5,7 +5,7 @@ var mongoose = require('mongoose');
 var path = require('path');
 var util = require('util');
 
-var mongodbFs = require('../lib/mongodb-fs');
+var mongodbFs = require('../lib/server');
 
 function TestHarness(mocks, port, logLevel) {
   this.config = {

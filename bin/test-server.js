@@ -2,7 +2,7 @@
 
 var util = require('util');
 
-var mongodbFs = require('../lib/mongodb-fs');
+var mongodbFs = require('../lib/server');
 
 var port = 27027;
 var database = 'fakedb';
