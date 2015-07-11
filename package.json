@@ -37,18 +37,18 @@
     "node": "*"
   },
   "dependencies": {
-    "bson": "0.2.15",
-    "lodash": "~2.4.1",
-    "log4js": "~0.6.22"
+    "bson": "0.4.0",
+    "lodash": "~3.10.0",
+    "log4js": "~0.6.26"
   },
   "devDependencies": {
-    "bluebird": "^2.9.27",
-    "chai": "~2.1.1",
-    "chai-properties": "~1.2.0",
-    "gulp": "^3.8.11",
-    "gulp-eslint": "^0.6.0",
-    "gulp-load-plugins": "^0.8.1",
-    "mocha": "^2.2.0",
-    "mongoose": "~3.8.24"
+    "bluebird": "^2.9.33",
+    "chai": "~3.0.0",
+    "chai-properties": "~1.2.1",
+    "gulp": "^3.9.0",
+    "gulp-eslint": "^0.15.0",
+    "gulp-load-plugins": "^1.0.0-rc.1",
+    "mocha": "^2.2.5",
+    "mongoose": "~3.8.33"
   }
 }
