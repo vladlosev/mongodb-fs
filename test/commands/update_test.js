@@ -117,12 +117,9 @@ describe('update', function() {
       {a: 'value1'},
       {'b.c': 42},
       function(error, result) {
-        if (error) return done(error);
-        expect(result).to.have.property('result');
-        expect(result.result).to.have.property('ok').to.be.not.ok;
-        expect(result.result).to.have.property('n').to.equal(0);
-        expect(result.result)
-          .to.have.property('errmsg')
+        expect(error).to.have.property('ok').to.be.not.ok;
+        expect(error)
+          .to.have.property('err')
           .to.have.string("can't have . in field names [b.c]");
         done();
     });
@@ -190,12 +187,11 @@ describe('update', function() {
       {},
       {'$pushAll': {'key': ['a']}},
       function(error, result) {
-        if (error) return done(error);
-        expect(result).to.have.property('result');
-        expect(result.result).to.have.property('ok').to.be.not.ok;
-        expect(result.result).to.have.property('n').to.equal(0);
-        expect(result.result)
-          .to.have.property('errmsg', "The field 'key' must be an array.");
+        expect(error).to.have.property('ok').to.be.not.ok;
+        expect(error)
+          .to.have.property('err')
+          .to.have.string("The field 'key' must be an array.");
+
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
           .to.deep.equal({key: {a: 1}});
@@ -209,14 +205,12 @@ describe('update', function() {
       {},
       {'$pushAll': {key: 'abc'}},
       function(error, result) {
-        if (error) return done(error);
-        expect(result).to.have.property('result');
-        expect(result.result).to.have.property('ok').to.be.not.ok;
-        expect(result.result).to.have.property('n').to.equal(0);
-        expect(result.result)
-          .to.have.property('errmsg')
+        expect(error).to.have.property('ok').to.be.not.ok;
+        expect(error)
+          .to.have.property('err')
           .to.contain(
             '$pushAll requires an array of values but was given an String');
+
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
           .to.have.property('key')
@@ -418,14 +412,11 @@ describe('update', function() {
       {},
       {$pull: {'key.1': 'a'}},
       function(error, result) {
-        if (error) return done(error);
-        expect(result).to.have.property('result');
-        expect(result.result).to.have.property('ok').to.be.not.ok;
-        expect(result.result).to.have.property('n').to.equal(0);
-        expect(result.result)
-          .to.have.property(
-            'errmsg',
-            'Cannot apply $pull to a non-array value');
+        expect(error).to.have.property('ok').to.be.not.ok;
+        expect(error)
+          .to.have.property('err')
+          .to.contain('Cannot apply $pull to a non-array value');
+
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
           .to.deep.equal({key: ['value1', 'value2']});
@@ -439,13 +430,10 @@ describe('update', function() {
       {key: 'value1'},
       {$set: {'key.k2.k3': 5}},
       function(error, result) {
-        if (error) return done(error);
-        expect(result).to.have.property('result');
-        expect(result.result).to.have.property('ok').to.be.not.ok;
-        expect(result.result).to.have.property('n').to.equal(0);
-        expect(result.result)
-          .to.have.property(
-            'errmsg',
+        expect(error).to.have.property('ok').to.be.not.ok;
+        expect(error)
+          .to.have.property('err')
+          .to.contain(
             'cannot use the part (k2 of key.k2.k3)' +
             " to traverse the element ({ key: 'value1' })");
         done();
@@ -458,14 +446,10 @@ describe('update', function() {
       {'$eq': 2},
       {$set: {'value': 5}},
       function(error, result) {
-        if (error) return done(error);
-        expect(result).to.have.property('result');
-        expect(result.result).to.have.property('ok').to.be.not.ok;
-        expect(result.result).to.have.property('n').to.equal(0);
-        expect(result.result)
-          .to.have.property(
-            'errmsg',
-            'BadValue unknown top level operator: $eq');
+        expect(error).to.have.property('ok').to.be.not.ok;
+        expect(error)
+          .to.have.property('err')
+          .to.contain('BadValue unknown top level operator: $eq');
         done();
     });
   });
@@ -866,12 +850,9 @@ describe('update', function() {
         {a: 'new value', '$inc': {b: 10}},
         {multi: true},
         function(error, result) {
-          if (error) return done(error);
-          expect(result).to.have.property('result');
-          expect(result.result).to.have.property('ok').to.be.not.ok;
-          expect(result.result).to.have.property('n').to.equal(0);
-          expect(result.result)
-            .to.have.property('errmsg')
+          expect(error).to.have.property('ok').to.be.not.ok;
+          expect(error)
+            .to.have.property('err')
             .to.have.string('multi update only works with $ operators');
           done();
       });
