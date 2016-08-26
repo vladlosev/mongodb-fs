@@ -7,6 +7,9 @@ chai.use(require('chai-properties'));
 
 var TestHarness = require('../test_harness');
 
+// Chai uses properties rather than methods for assertions.
+/* eslint-disable no-unused-expressions */
+
 describe('insert', function() {
   var expect = chai.expect;
 

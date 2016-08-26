@@ -3,7 +3,6 @@
 var _ = require('lodash');
 var chai = require('chai');
 var mongoose = require('mongoose');
-var util = require('util');
 
 var TestHarness = require('../test_harness');
 
@@ -116,7 +115,7 @@ describe('update', function() {
     Item.collection.update(
       {a: 'value1'},
       {'b.c': 42},
-      function(error, result) {
+      function(error) {
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')
@@ -186,7 +185,7 @@ describe('update', function() {
     Item.collection.update(
       {},
       {'$pushAll': {'key': ['a']}},
-      function(error, result) {
+      function(error) {
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')
@@ -204,7 +203,7 @@ describe('update', function() {
     Item.collection.update(
       {},
       {'$pushAll': {key: 'abc'}},
-      function(error, result) {
+      function(error) {
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')
@@ -411,7 +410,7 @@ describe('update', function() {
     Item.collection.update(
       {},
       {$pull: {'key.1': 'a'}},
-      function(error, result) {
+      function(error) {
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')
@@ -429,7 +428,7 @@ describe('update', function() {
     Item.collection.update(
       {key: 'value1'},
       {$set: {'key.k2.k3': 5}},
-      function(error, result) {
+      function(error) {
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')
@@ -445,7 +444,7 @@ describe('update', function() {
     Item.collection.update(
       {'$eq': 2},
       {$set: {'value': 5}},
-      function(error, result) {
+      function(error) {
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')
@@ -849,7 +848,7 @@ describe('update', function() {
         {a: 'value'},
         {a: 'new value', '$inc': {b: 10}},
         {multi: true},
-        function(error, result) {
+        function(error) {
           expect(error).to.have.property('ok').to.be.not.ok;
           expect(error)
             .to.have.property('err')

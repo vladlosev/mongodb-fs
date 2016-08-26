@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "bluebird": "^2.9.33",
-    "chai": "~3.0.0",
+    "chai": "~3.5.0",
     "chai-properties": "~1.2.1",
     "gulp": "^3.9.0",
     "gulp-eslint": "^0.15.0",
