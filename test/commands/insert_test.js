@@ -7,6 +7,9 @@ chai.use(require('chai-properties'));
 
 var TestHarness = require('../test_harness');
 
+// Chai uses properties rather than methods for assertions.
+/* eslint-disable no-unused-expressions */
+
 describe('insert', function() {
   var expect = chai.expect;
 
@@ -58,17 +61,12 @@ describe('insert', function() {
           {collection: 'system.indexes', versionKey: false, _id: false}));
       Index.collection.insert(
         [{key: {a: 1}, name: 'a_1', v: 1, ns: 'fakedb.items'}],
-        function(error, results) {
+        function(error, result) {
           delete mongoose.connection.models.Index;
           if (error) return done(error);
 
-          chai.expect(results).to.have.length(1);
-          chai.expect(results[0]).to.have.properties({
-            v: 1,
-            key: {a: 1},
-            name: 'a_1',
-            ns: 'fakedb.items'
-          });
+          expect(result).to.have.deep.property('result.ok').to.be.ok;
+
           chai.expect(fakeDatabase['system.indexes']).to.have.length(2);
           chai.expect(fakeDatabase['system.indexes'][0])
             .to.have.properties({

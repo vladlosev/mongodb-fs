@@ -37,18 +37,18 @@
     "node": "*"
   },
   "dependencies": {
-    "bson": "0.4.0",
+    "bson": "0.5.4",
     "lodash": "~3.10.0",
     "log4js": "~0.6.26"
   },
   "devDependencies": {
     "bluebird": "^2.9.33",
-    "chai": "~3.0.0",
+    "chai": "~3.5.0",
     "chai-properties": "~1.2.1",
     "gulp": "^3.9.0",
     "gulp-eslint": "^0.15.0",
     "gulp-load-plugins": "^1.0.0-rc.1",
     "mocha": "^2.2.5",
-    "mongoose": "~3.8.33"
+    "mongoose": "~4.5.10"
   }
 }
