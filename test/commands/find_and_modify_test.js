@@ -64,7 +64,9 @@ describe('findAndModify', function() {
       {'$set': {a: 'new value'}},
       function(error, item) {
         if (error) return done(error);
-        expect(item).to.deep.equal(originalItems[0]);
+        expect(item)
+          .to.have.property('value')
+          .to.deep.equal(originalItems[0]);
         done();
     });
   });
@@ -77,7 +79,9 @@ describe('findAndModify', function() {
       {fields: {a: 1}},
       function(error, item) {
         if (error) return done(error);
-        expect(item).to.deep.equal({a: 'value', _id: id1});
+        expect(item)
+          .to.have.property('value')
+          .to.deep.equal({a: 'value', _id: id1});
         done();
     });
   });
@@ -90,7 +94,9 @@ describe('findAndModify', function() {
       {'new': true},
       function(error, item) {
         if (error) return done(error);
-        expect(item).to.deep.equal({a: 'new value', b: 1, _id: id1});
+        expect(item)
+          .to.have.property('value')
+          .to.deep.equal({a: 'new value', b: 1, _id: id1});
         done();
     });
   });
@@ -104,7 +110,9 @@ describe('findAndModify', function() {
         {fields: {a: 1}, 'new': 1},
         function(error, item) {
           if (error) return done(error);
-          expect(item).to.deep.equal({a: 'new value', _id: id1});
+          expect(item)
+            .to.have.property('value')
+            .to.deep.equal({a: 'new value', _id: id1});
           done();
       });
   });
@@ -164,7 +172,9 @@ describe('findAndModify', function() {
       {'$set': {a: 'new value'}},
       function(error, item) {
         if (error) return done(error);
-        expect(item).to.equal(null);
+        expect(item)
+          .to.have.property('value')
+          .to.equal(null);
         done();
     });
   });
@@ -275,7 +285,9 @@ describe('findAndModify', function() {
         function(error, item) {
           if (error) return done(error);
           // The first record was deleted and is returned.
-          expect(item).to.deep.equal(originalItems[0]);
+          expect(item)
+            .to.have.property('value')
+            .to.deep.equal(originalItems[0]);
           done();
       });
     });
@@ -367,7 +379,9 @@ describe('findAndModify', function() {
         {upsert: true},
         function(error, item) {
           if (error) return done(error);
-          expect(item).to.equal(null);
+          expect(item)
+            .to.have.property('value')
+            .to.equal(null);
           done();
       });
     });
@@ -380,9 +394,11 @@ describe('findAndModify', function() {
         {upsert: true, 'new': true},
         function(error, item) {
           if (error) return done(error);
-          expect(item)
+          expect(item).to.have.property('value');
+          expect(item.value)
             .to.have.deep.property('_id.constructor.name', 'ObjectID');
-          expect(_.omit(item, '_id')).to.deep.equal({b: 3, a: 'new value'});
+          expect(_.omit(item.value, '_id'))
+            .to.deep.equal({b: 3, a: 'new value'});
           done();
       });
     });
@@ -396,9 +412,10 @@ describe('findAndModify', function() {
           {fields: {a: 1}, upsert: true, 'new': true},
           function(error, item) {
             if (error) return done(error);
-            expect(item)
+            expect(item).to.have.property('value');
+            expect(item.value)
               .to.have.deep.property('_id.constructor.name', 'ObjectID');
-            expect(_.omit(item, '_id')).to.deep.equal({a: 'new value'});
+            expect(_.omit(item.value, '_id')).to.deep.equal({a: 'new value'});
             done();
         });
     });

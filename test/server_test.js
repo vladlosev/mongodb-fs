@@ -73,6 +73,7 @@ describe('Works in forked mode', function() {
       Item.findByIdAndUpdate(
         {_id: fakeDatabase.items[1]._id},
         {'$set': {key: 18}},
+        {'new': true},
         function(error, item) {
           if (error) return done(error);
           expect(item).to.have.property('key', 18);

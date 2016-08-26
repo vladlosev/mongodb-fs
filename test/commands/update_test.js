@@ -3,6 +3,7 @@
 var _ = require('lodash');
 var chai = require('chai');
 var mongoose = require('mongoose');
+var util = require('util');
 
 var TestHarness = require('../test_harness');
 
@@ -36,15 +37,15 @@ describe('update', function() {
       {},
       {'$set': {key: 'new value'}},
       {multi: true},
-      function(error, updatedDocuments) {
+      function(error, result) {
         if (error) return done(error);
-        expect(updatedDocuments).to.equal(2);
+        expect(result).to.have.deep.property('result.ok').to.be.ok;
+        expect(result).to.have.deep.property('result.n').to.equal(2);
         expect(fakeDatabase.items).to.have.length(2);
         expect(fakeDatabase.items[0])
           .to.have.property('key', 'new value');
         expect(fakeDatabase.items[1])
           .to.have.property('key', 'new value');
-        expect(updatedDocuments).to.equal(2);
         done();
     });
   });
@@ -54,15 +55,15 @@ describe('update', function() {
     Item.collection.update(
       {key: 'value2'},
       {'$set': {key: 'new value'}},
-      function(error, updatedDocuments) {
+      function(error, result) {
         if (error) return done(error);
-        expect(updatedDocuments).to.equal(1);
+        expect(result).to.have.deep.property('result.ok').to.be.ok;
+        expect(result).to.have.deep.property('result.n').to.equal(1);
         expect(fakeDatabase.items).to.have.length(2);
         expect(fakeDatabase.items[0])
           .to.have.property('key', 'value1');
         expect(fakeDatabase.items[1])
           .to.have.property('key', 'new value');
-        expect(updatedDocuments).to.equal(1);
         done();
     });
   });
@@ -72,10 +73,11 @@ describe('update', function() {
     Item.collection.update(
       {key: 'value3'},
       {'$set': {key: 'new value'}},
-      function(error, updatedDocuments) {
+      function(error, result) {
         if (error) return done(error);
 
-        expect(updatedDocuments).to.equal(0);
+        expect(result).to.have.deep.property('result.ok').to.be.ok;
+        expect(result).to.have.deep.property('result.n').to.equal(0);
         expect(fakeDatabase.items).to.have.length(2);
         expect(_.pluck(fakeDatabase.items, 'key'))
           .to.deep.equal(['value1', 'value2']);
@@ -114,11 +116,13 @@ describe('update', function() {
     Item.collection.update(
       {a: 'value1'},
       {'b.c': 42},
-      function(error) {
-        expect(error).to.have.property('ok', false);
-        expect(error).to.have.property('name', 'MongoError');
-        expect(error)
-          .to.have.property('err')
+      function(error, result) {
+        if (error) return done(error);
+        expect(result).to.have.property('result');
+        expect(result.result).to.have.property('ok').to.be.not.ok;
+        expect(result.result).to.have.property('n').to.equal(0);
+        expect(result.result)
+          .to.have.property('errmsg')
           .to.have.string("can't have . in field names [b.c]");
         done();
     });
@@ -138,10 +142,11 @@ describe('update', function() {
 
   it('does not create non-existent collection', function(done) {
     delete fakeDatabase.items;
-    Item.collection.update({a: 'value1'}, {b: 42}, function(error, n) {
+    Item.collection.update({a: 'value1'}, {b: 42}, function(error, result) {
       if (error) return done(error);
 
-      expect(n).to.equal(0);
+      expect(result).to.have.deep.property('result.ok').to.be.ok;
+      expect(result).to.have.deep.property('result.n').to.equal(0);
       // The subfield a.c should be gone as the update document does not
       // specify any operators.
       expect(fakeDatabase).to.not.have.property('items');
@@ -184,11 +189,13 @@ describe('update', function() {
     Item.collection.update(
       {},
       {'$pushAll': {'key': ['a']}},
-      function(error) {
-        expect(error).to.exist;
-        expect(error.ok).to.be.false;
-        expect(error)
-          .to.have.property('err', "The field 'key' must be an array.");
+      function(error, result) {
+        if (error) return done(error);
+        expect(result).to.have.property('result');
+        expect(result.result).to.have.property('ok').to.be.not.ok;
+        expect(result.result).to.have.property('n').to.equal(0);
+        expect(result.result)
+          .to.have.property('errmsg', "The field 'key' must be an array.");
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
           .to.deep.equal({key: {a: 1}});
@@ -201,11 +208,13 @@ describe('update', function() {
     Item.collection.update(
       {},
       {'$pushAll': {key: 'abc'}},
-      function(error) {
-        expect(error).to.exist;
-        expect(error.ok).to.be.false;
-        expect(error)
-          .to.have.property('err')
+      function(error, result) {
+        if (error) return done(error);
+        expect(result).to.have.property('result');
+        expect(result.result).to.have.property('ok').to.be.not.ok;
+        expect(result.result).to.have.property('n').to.equal(0);
+        expect(result.result)
+          .to.have.property('errmsg')
           .to.contain(
             '$pushAll requires an array of values but was given an String');
         expect(fakeDatabase.items).to.have.length(1);
@@ -221,9 +230,10 @@ describe('update', function() {
     Item.collection.update(
       {_id: id1},
       {'$set': {key: ['one', 'two']}},
-      function(error, n) {
+      function(error, result) {
         if (error) return done(error);
-        expect(n).to.equal(1);
+        expect(result).to.have.deep.property('result.ok').to.be.ok;
+        expect(result).to.have.deep.property('result.n').to.equal(1);
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
           .to.have.property('key')
@@ -404,15 +414,22 @@ describe('update', function() {
 
   it('$pull from non-array fails', function(done) {
     fakeDatabase.items = [{key: ['value1', 'value2']}];
-    Item.collection.update({}, {$pull: {'key.1': 'a'}}, function(error) {
-      expect(error).to.exist;
-      expect(error.ok).to.be.false;
-      expect(error)
-        .to.have.property('err', 'Cannot apply $pull to a non-array value');
-      expect(fakeDatabase.items).to.have.length(1);
-      expect(fakeDatabase.items[0])
-        .to.deep.equal({key: ['value1', 'value2']});
-      done();
+    Item.collection.update(
+      {},
+      {$pull: {'key.1': 'a'}},
+      function(error, result) {
+        if (error) return done(error);
+        expect(result).to.have.property('result');
+        expect(result.result).to.have.property('ok').to.be.not.ok;
+        expect(result.result).to.have.property('n').to.equal(0);
+        expect(result.result)
+          .to.have.property(
+            'errmsg',
+            'Cannot apply $pull to a non-array value');
+        expect(fakeDatabase.items).to.have.length(1);
+        expect(fakeDatabase.items[0])
+          .to.deep.equal({key: ['value1', 'value2']});
+        done();
     });
   });
 
@@ -421,12 +438,14 @@ describe('update', function() {
     Item.collection.update(
       {key: 'value1'},
       {$set: {'key.k2.k3': 5}},
-      function(error) {
-        expect(error).to.exist;
-        expect(error.ok).to.be.false;
-        expect(error)
+      function(error, result) {
+        if (error) return done(error);
+        expect(result).to.have.property('result');
+        expect(result.result).to.have.property('ok').to.be.not.ok;
+        expect(result.result).to.have.property('n').to.equal(0);
+        expect(result.result)
           .to.have.property(
-            'err',
+            'errmsg',
             'cannot use the part (k2 of key.k2.k3)' +
             " to traverse the element ({ key: 'value1' })");
         done();
@@ -435,12 +454,19 @@ describe('update', function() {
 
   it('rejects invalid filters', function(done) {
     fakeDatabase.items = [{key: 'value1'}];
-    Item.collection.update({'$eq': 2}, {$set: {'value': 5}}, function(error) {
-      expect(error).to.exist;
-      expect(error.ok).to.be.false;
-      expect(error)
-        .to.have.property('err', 'BadValue unknown top level operator: $eq');
-      done();
+    Item.collection.update(
+      {'$eq': 2},
+      {$set: {'value': 5}},
+      function(error, result) {
+        if (error) return done(error);
+        expect(result).to.have.property('result');
+        expect(result.result).to.have.property('ok').to.be.not.ok;
+        expect(result.result).to.have.property('n').to.equal(0);
+        expect(result.result)
+          .to.have.property(
+            'errmsg',
+            'BadValue unknown top level operator: $eq');
+        done();
     });
   });
 
@@ -839,11 +865,13 @@ describe('update', function() {
         {a: 'value'},
         {a: 'new value', '$inc': {b: 10}},
         {multi: true},
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('name', 'MongoError');
-          expect(error)
-            .to.have.property('err')
+        function(error, result) {
+          if (error) return done(error);
+          expect(result).to.have.property('result');
+          expect(result.result).to.have.property('ok').to.be.not.ok;
+          expect(result.result).to.have.property('n').to.equal(0);
+          expect(result.result)
+            .to.have.property('errmsg')
             .to.have.string('multi update only works with $ operators');
           done();
       });

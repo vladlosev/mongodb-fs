@@ -37,7 +37,7 @@
     "node": "*"
   },
   "dependencies": {
-    "bson": "0.4.0",
+    "bson": "0.5.4",
     "lodash": "~3.10.0",
     "log4js": "~0.6.26"
   },
@@ -49,6 +49,6 @@
     "gulp-eslint": "^0.15.0",
     "gulp-load-plugins": "^1.0.0-rc.1",
     "mocha": "^2.2.5",
-    "mongoose": "~3.8.33"
+    "mongoose": "~4.5.10"
   }
 }

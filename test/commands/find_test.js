@@ -101,8 +101,8 @@ describe('find', function() {
 
   it('returns requested projection', function(done) {
     fakeDatabase.items = [
-      {key: 'value', key2: {a: 'b'}, _id: id2},
-      {key: 'value', key2: {a: 'c'}, _id: id1}
+      {key: 'value', key2: {a: 'b', x: 'y'}, _id: id2},
+      {key: 'value', key2: {a: 'c', z: 'x'}, _id: id1}
     ];
     Item.collection.find({key: 'value'}, {'key2.a': 1}).toArray(
       function(error, results) {
