@@ -40,7 +40,7 @@ describe('Multi-instance support', function() {
       if (error) return done(error);
       serverTwo.start(function(error) {
         if (error) {
-          return serverOne.stop(function() { done(error) });
+          return serverOne.stop(function() { done(error); });
         }
 
         mongodb.MongoClient.connect(
@@ -48,7 +48,7 @@ describe('Multi-instance support', function() {
           function(error, client) {
             if (error) {
               return serverTwo.stop(function() {
-                serverOne.stop(function() { done(error) });
+                serverOne.stop(function() { done(error); });
               });
             }
             clientOne = client;
@@ -59,7 +59,7 @@ describe('Multi-instance support', function() {
                 if (error) {
                   return clientOne.close(function() {
                     serverTwo.stop(function() {
-                      serverOne.stop(function() { done(error) });
+                      serverOne.stop(function() { done(error); });
                     });
                   });
                 }
@@ -68,7 +68,7 @@ describe('Multi-instance support', function() {
                 done();
             });
         });
-      })
+      });
     });
   });
 

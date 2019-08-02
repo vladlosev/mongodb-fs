@@ -114,7 +114,7 @@ describe('update', function() {
     harness.items.update(
       {a: 'value1'},
       {'b.c': 42},
-      function(error, res) {
+      function(error) {
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')
