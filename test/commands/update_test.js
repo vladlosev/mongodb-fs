@@ -2,7 +2,7 @@
 
 var _ = require('lodash');
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 
 var TestHarness = require('../test_harness');
 
@@ -12,14 +12,13 @@ var TestHarness = require('../test_harness');
 describe('update', function() {
   var expect = chai.expect;
 
-  var id1 = new mongoose.Types.ObjectId();
-  var id2 = new mongoose.Types.ObjectId();
-
+  var id1 = new mongodb.ObjectId();
+  var id2 = new mongodb.ObjectId(); 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
 
   before(function(done) {
-    harness.setUpWithMongoClient(function(error) {
+    harness.setUp(function(error) {
       if (error) return done(error);
       harness.items = harness.dbClient.db('fakedb').collection('items');
       done();
@@ -27,7 +26,7 @@ describe('update', function() {
   });
 
   after(function(done) {
-    harness.tearDownWithMongoClient(done);
+    harness.tearDown(done);
   });
 
   it('updates all documents', function(done) {
@@ -292,7 +291,7 @@ describe('update', function() {
   });
 
   it('$pull ObjectIds', function(done) {
-    var idCopy = new mongoose.Types.ObjectId(id1.toString());
+    var idCopy = new mongodb.ObjectId(id1.toString());
     fakeDatabase.items = [{key: [id1]}];
     harness.items.update({}, {$pull: {key: idCopy}}, function(error) {
       if (error) return done(error);

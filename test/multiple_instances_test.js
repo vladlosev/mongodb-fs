@@ -1,7 +1,7 @@
 'use strict';
 
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 var path = require('path');
 var MongoDbFs = require('../lib/server');
 
@@ -17,7 +17,7 @@ describe('Multi-instance support', function() {
   var ModelOne;
   var ModelTwo;
   var databaseOne = {
-    collectionOne: [{_id: new mongoose.Types.ObjectId(), key: 'value'}]
+    collectionOne: [{_id: new mongodb.ObjectId(), key: 'value'}]
   };
   var databaseTwo = {};
 
@@ -32,6 +32,11 @@ describe('Multi-instance support', function() {
     log: logConfig
   });
 
+  var clientOne;
+  var clientTwo;
+  var collectionOne;
+  var collectionTwo;
+
   before(function(done) {
     var serverOptions = {
       server: {poolSize: 1},
@@ -41,45 +46,54 @@ describe('Multi-instance support', function() {
     serverOne.start(function(error) {
       if (error) return done(error);
       serverTwo.start(function(error) {
-        if (error) return done(error);
-        mongoose.createConnection(
+        if (error) {
+          return serverOne.stop(function() { done(error) });
+        }
+
+        mongodb.MongoClient.connect(
           'mongodb://localhost:27027/fakedbone',
-          serverOptions)
-        .then(function(connectionOne) {
-          ModelOne = connectionOne.model(
-            'ModelOne',
-            new mongoose.Schema(
-              {any: mongoose.Schema.Types.Mixed},
-              {collection: 'collectionOne', cache: false}));
-        }).then(function() {
-          return mongoose.createConnection(
-            'mongodb://localhost:27028/fakedbtwo',
-            serverOptions)
-        }).then(function(connectionTwo) {
-          ModelTwo = connectionTwo.model(
-            'ModelTwo',
-            new mongoose.Schema(
-              {any: mongoose.Schema.Types.Mixed},
-              {collection: 'collectionTwo', cache: false}));
-        }).then(function() { done(); })
-        .catch(done)
-      });
+          function(err, client) {
+            if (error) {
+              return serverTwo.stop(function() {
+                serverOne.stop(function() { done(error) });
+              });
+            }
+            clientOne = client;
+            collectionOne = client.db('fakedbone').collection('collectionOne');
+            mongodb.MongoClient.connect(
+              'mongodb://localhost:27028/fakedbtwo',
+              function(err, client) {
+                if (error) {
+                  return clientOne.close(function() {
+                    serverTwo.stop(function() {
+                      serverOne.stop(function() { done(error) });
+                    });
+                  });
+                }
+                clientTwo = client;
+                collectionTwo = client.db('fakedbtwo').collection('collectionTwo');
+                done();
+            });
+        });
+      })
     });
   });
 
   after(function(done) {
-    mongoose.disconnect(function() {
-      serverOne.stop(function() {
-        serverTwo.stop(done);
-      });
+    clientOne.close(function() {
+      clientTwo.close(function() {
+        serverOne.stop(function() {
+          serverTwo.stop(done);
+        });
+      })
     });
   });
 
   it('supports multiple server instances', function(done) {
     chai.expect(databaseTwo.collectionTwo).to.not.exist;
-    ModelOne.findOne({}, function(error, result) {
+    collectionOne.findOne({}, function(error, result) {
       if (error) return done(error);
-      ModelTwo.collection.insert(result.toObject(), function(error) {
+      collectionTwo.insert(result, function(error) {
         if (error) return done(error);
         chai.expect(databaseTwo.collectionTwo).to.have.length(1);
         chai.expect(databaseTwo.collectionTwo[0])

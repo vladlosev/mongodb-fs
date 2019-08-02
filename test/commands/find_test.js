@@ -2,33 +2,25 @@
 
 var _ = require('lodash');
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 
 var TestHarness = require('../test_harness');
 
 // Chai uses properties rather than methods for assertions.
 /* eslint-disable no-unused-expressions */
 
-function getProjectionOption(projection) {
-  if (parseInt(mongoose.version.split('.')[0]) <= 4) {
-    return projection;
-  } else {
-    return {projection: projection};
-  }
-}
-
 describe('find', function() {
   var expect = chai.expect;
 
-  var id1 = new mongoose.Types.ObjectId();
-  var id2 = new mongoose.Types.ObjectId();
-  var id3 = new mongoose.Types.ObjectId();
+  var id1 = new mongodb.ObjectId();
+  var id2 = new mongodb.ObjectId();
+  var id3 = new mongodb.ObjectId();
 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
 
   before(function(done) {
-    harness.setUpWithMongoClient(function(error) {
+    harness.setUp(function(error) {
       if (error) return done(error);
       harness.items = harness.dbClient.db('fakedb').collection('items');
       done();
@@ -36,7 +28,7 @@ describe('find', function() {
   });
 
   after(function(done) {
-    harness.tearDownWithMongoClient(done);
+    harness.tearDown(done);
   });
 
   it('returns all documents', function(done) {
@@ -112,10 +104,8 @@ describe('find', function() {
       {key: 'value', key2: {a: 'b', x: 'y'}, _id: id2},
       {key: 'value', key2: {a: 'c', z: 'x'}, _id: id1}
     ];
-    harness.items.find(
-      {key: 'value'},
-      getProjectionOption({'key2.a': 1})
-    ).toArray(function(error, results) {
+    harness.items.find({key: 'value'}).project({'key2.a': 1})
+    .toArray(function(error, results) {
       if (error) return done(error);
 
       expect(results).to.have.length(2);
@@ -171,7 +161,7 @@ describe('find', function() {
       {key: 'value3', key2: 3, _id: id3}
     ];
     harness.items.findOne(
-      {_id: new mongoose.Types.ObjectId(id3)},
+      {_id: new mongodb.ObjectId(id3)},
       function(error, item) {
         if (error) return done(error);
         expect(item).to.exist;
@@ -190,7 +180,7 @@ describe('find', function() {
   });
 
   it('rejects invalid requested projections', function(done) {
-    harness.items.find({b: 1}, getProjectionOption({a: 1, b: 0}))
+    harness.items.find({b: 1}).project({a: 1, b: 0})
       .toArray(function(error) {
         expect(error).to.have.property('name', 'MongoError');
         expect(error)

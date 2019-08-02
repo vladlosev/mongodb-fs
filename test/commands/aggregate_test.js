@@ -1,7 +1,7 @@
 'use strict';
 
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 var Promise = require('bluebird');
 
 var TestHarness = require('../test_harness');
@@ -12,9 +12,9 @@ var TestHarness = require('../test_harness');
 describe('aggregate', function() {
   var expect = chai.expect;
 
-  var id1 = new mongoose.Types.ObjectId();
-  var id2 = new mongoose.Types.ObjectId();
-  var id3 = new mongoose.Types.ObjectId();
+  var id1 = new mongodb.ObjectId();
+  var id2 = new mongodb.ObjectId();
+  var id3 = new mongodb.ObjectId();
 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
@@ -78,7 +78,7 @@ describe('aggregate', function() {
   }
 
   before(function(done) {
-    harness.setUpWithMongoClient(function(error) {
+    harness.setUp(function(error) {
       if (error) return done(error);
       harness.items = harness.dbClient.db('fakedb').collection('items');
       done();
@@ -86,7 +86,7 @@ describe('aggregate', function() {
   });
 
   after(function(done) {
-    harness.tearDownWithMongoClient(done);
+    harness.tearDown(done);
   });
 
   it('empty sequence returns all documents', function(done) {
@@ -602,8 +602,8 @@ describe('aggregate', function() {
     });
 
     it('compares ObjectIds', function(done) {
-      var idCompare1 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
-      var idCompare2 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf2');
+      var idCompare1 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
+      var idCompare2 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf2');
 
       assertMaxResults(
         [
@@ -615,7 +615,7 @@ describe('aggregate', function() {
     });
 
     it('ranks ObjectIds higher than arrays', function(done) {
-      var id = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+      var id = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
 
       assertMaxResults(
         [
@@ -637,7 +637,7 @@ describe('aggregate', function() {
     });
 
     it('ranks Booleans higher than ObjectIds', function(done) {
-      var id = new mongoose.Types.ObjectId();
+      var id = new mongodb.ObjectId();
 
       assertMaxResults(
         [
@@ -1347,13 +1347,13 @@ describe('aggregate', function() {
     });
 
     it('compares ObjectIds', function() {
-      var idCompare1 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
-      var idCompare2 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf2');
+      var idCompare1 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
+      var idCompare2 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf2');
       return assertStrictComparisonResult('$lt', idCompare1, idCompare2, true);
     });
 
     it('ranks ObjectIds higher than arrays', function() {
-      var id = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+      var id = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
       return assertStrictComparisonResult('$lt', ['x'], id, true);
     });
 
@@ -1362,7 +1362,7 @@ describe('aggregate', function() {
     });
 
     it('ranks Booleans higher than ObjectIds', function() {
-      var id = new mongoose.Types.ObjectId();
+      var id = new mongodb.ObjectId();
       return assertStrictComparisonResult('$lt', id, false, true);
     });
 

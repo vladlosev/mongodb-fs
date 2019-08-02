@@ -2,29 +2,30 @@
 
 var _ = require('lodash');
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 
 var TestHarness = require('../test_harness');
 
 describe('findAndModify', function() {
   var expect = chai.expect;
 
-  var id1 = new mongoose.Types.ObjectId();
-  var id2 = new mongoose.Types.ObjectId();
+  var id1 = new mongodb.ObjectId();
+  var id2 = new mongodb.ObjectId();
 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
-  var Item;
 
   var originalItems = [
     {a: 'value', b: 1, _id: id1},
     {a: 'value', b: 2, _id: id2}
 
   ];
+
   before(function(done) {
     harness.setUp(function(error) {
-      Item = mongoose.connection.models.Item;
-      done(error);
+      if (error) return done(error);
+      harness.items = harness.dbClient.db('fakedb').collection('items');
+      done();
     });
   });
 
@@ -36,14 +37,14 @@ describe('findAndModify', function() {
     fakeDatabase.items = _.cloneDeep(
       originalItems,
       function(value) {
-        return value instanceof mongoose.Types.ObjectId ?
-          new mongoose.Types.ObjectId(value) :
+        return value instanceof mongodb.ObjectId ?
+          new mongodb.ObjectId(value) :
           undefined;
       });
   });
 
   it('finds and updates a document', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       {},
       {'$set': {a: 'new value'}},
@@ -58,7 +59,7 @@ describe('findAndModify', function() {
   });
 
   it('returns original document', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       {},
       {'$set': {a: 'new value'}},
@@ -72,7 +73,7 @@ describe('findAndModify', function() {
   });
 
   it('returns requested projection of original document', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       null,
       {'$set': {a: 'new value'}},
@@ -87,7 +88,7 @@ describe('findAndModify', function() {
   });
 
   it('returns new document when new is set', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       {},
       {'$set': {a: 'new value'}},
@@ -103,7 +104,7 @@ describe('findAndModify', function() {
 
   it('returns requested projection of updated document when new is set',
     function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 1},
         null,
         {'$set': {a: 'new value'}},
@@ -119,7 +120,7 @@ describe('findAndModify', function() {
 
   it('does not create non-existent collection', function(done) {
     delete fakeDatabase.items;
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       {},
       {'$set': {a: 'new value'}},
@@ -131,7 +132,7 @@ describe('findAndModify', function() {
   });
 
   it('rejects invalid filters', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {'$eq': 2},
       null,
       {'$set': {a: 'new value'}},
@@ -146,7 +147,7 @@ describe('findAndModify', function() {
   });
 
   it('rejects invalid requested projections', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       null,
       {'$set': {a: 'new value'}},
@@ -166,7 +167,7 @@ describe('findAndModify', function() {
   });
 
   it('returns null when document is not found', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 'non-existent'},
       {},
       {'$set': {a: 'new value'}},
@@ -180,7 +181,7 @@ describe('findAndModify', function() {
   });
 
   it('fails when update document is not specified', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       function(error) {
         expect(error).to.have.property('ok', false);
@@ -196,7 +197,7 @@ describe('findAndModify', function() {
   });
 
   it('fails when operators follow fields in update', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       {},
       {a: 'new value', $set: {b: 5}},
@@ -216,7 +217,7 @@ describe('findAndModify', function() {
   });
 
   it('fails when fields follow operators in update', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       {},
       {$set: {b: 5}, a: 'new value'},
@@ -234,7 +235,7 @@ describe('findAndModify', function() {
   });
 
   it('fails when direct field asignments use dot notation', function(done) {
-    Item.collection.findAndModify(
+    harness.items.findAndModify(
       {b: 1},
       {},
       {'y.z': 5},
@@ -263,7 +264,7 @@ describe('findAndModify', function() {
 
   describe('with remove option set', function() {
     it('deletes the found document', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 1},
         null,
         null,
@@ -277,7 +278,7 @@ describe('findAndModify', function() {
     });
 
     it('returns the deleted document', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 1},
         null,
         null,
@@ -293,7 +294,7 @@ describe('findAndModify', function() {
     });
 
     it('ignores update document', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 1},
         null,
         {a: 'new value'},
@@ -308,7 +309,7 @@ describe('findAndModify', function() {
     });
 
     it('fails when new is specified', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 1},
         null,
         null,
@@ -337,7 +338,7 @@ describe('findAndModify', function() {
 
   describe('with upsert options set', function() {
     it('updates existing document', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 1},
         null,
         {'$set': {a: 'new value'}},
@@ -353,7 +354,7 @@ describe('findAndModify', function() {
     });
 
     it('inserts new document when no matches', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 3},
         null,
         {'$set': {a: 'new value'}},
@@ -372,7 +373,7 @@ describe('findAndModify', function() {
     });
 
     it('returns null when upserting', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 3},
         null,
         {'$set': {a: 'new value'}},
@@ -387,7 +388,7 @@ describe('findAndModify', function() {
     });
 
     it('returns new document when upserting and new is set', function(done) {
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 3},
         null,
         {'$set': {a: 'new value'}},
@@ -405,7 +406,7 @@ describe('findAndModify', function() {
 
     it('returns requested projection of new document with new set',
       function(done) {
-        Item.collection.findAndModify(
+        harness.items.findAndModify(
           {b: 3},
           null,
           {'$set': {a: 'new value'}},
@@ -422,7 +423,7 @@ describe('findAndModify', function() {
 
     it('creates new collection if it does not exist', function(done) {
       delete fakeDatabase.items;
-      Item.collection.findAndModify(
+      harness.items.findAndModify(
         {b: 3},
         null,
         {'$set': {a: 'new value'}},

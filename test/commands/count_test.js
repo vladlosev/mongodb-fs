@@ -1,7 +1,6 @@
 'use strict';
 
 var chai = require('chai');
-var mongoose = require('mongoose');
 
 var TestHarness = require('../test_harness');
 
@@ -10,12 +9,12 @@ describe('count', function() {
 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
-  var Item;
 
   before(function(done) {
     harness.setUp(function(error) {
-      Item = mongoose.connection.models.Item;
-      done(error);
+      if (error) return done(error);
+      harness.items = harness.dbClient.db('fakedb').collection('items');
+      done();
     });
   });
 
@@ -25,7 +24,7 @@ describe('count', function() {
 
   it('returns the number of queried documents', function(done) {
     fakeDatabase.items = [{key: 1}, {key: 2}, {key: 3}];
-    Item.count({key: {$gt: 1}}, function(error, n) {
+    harness.items.count({key: {$gt: 1}}, function(error, n) {
       if (error) return done(error);
       expect(n).to.equal(2);
       done();
@@ -34,7 +33,7 @@ describe('count', function() {
 
   it('reports count of non-existent collection as zero', function(done) {
     delete fakeDatabase.items;
-    Item.count({}, function(error, n) {
+    harness.items.count({}, function(error, n) {
       if (error) return done(error);
       expect(n).to.equal(0);
       done();
@@ -43,7 +42,7 @@ describe('count', function() {
 
   it('does not create a collection if non-existent', function(done) {
     delete fakeDatabase.items;
-    Item.count({}, function(error) {
+    harness.items.count({}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase).to.not.have.property('items');
       done();
