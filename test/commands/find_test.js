@@ -9,6 +9,14 @@ var TestHarness = require('../test_harness');
 // Chai uses properties rather than methods for assertions.
 /* eslint-disable no-unused-expressions */
 
+function getProjectionOption(projection) {
+  if (parseInt(mongoose.version.split('.')[0]) <= 4) {
+    return projection;
+  } else {
+    return {projection: projection};
+  }
+}
+
 describe('find', function() {
   var expect = chai.expect;
 
@@ -104,14 +112,16 @@ describe('find', function() {
       {key: 'value', key2: {a: 'b', x: 'y'}, _id: id2},
       {key: 'value', key2: {a: 'c', z: 'x'}, _id: id1}
     ];
-    harness.items.find({key: 'value'}, {projection: {'key2.a': 1}}).toArray(
-      function(error, results) {
-        if (error) return done(error);
+    harness.items.find(
+      {key: 'value'},
+      getProjectionOption({'key2.a': 1})
+    ).toArray(function(error, results) {
+      if (error) return done(error);
 
-        expect(results).to.have.length(2);
-        expect(_.omit(results[0], '_id')).to.deep.equal({key2: {a: 'b'}});
-        expect(_.omit(results[1], '_id')).to.deep.equal({key2: {a: 'c'}});
-        done();
+      expect(results).to.have.length(2);
+      expect(_.omit(results[0], '_id')).to.deep.equal({key2: {a: 'b'}});
+      expect(_.omit(results[1], '_id')).to.deep.equal({key2: {a: 'c'}});
+      done();
     });
   });
 
@@ -180,7 +190,7 @@ describe('find', function() {
   });
 
   it('rejects invalid requested projections', function(done) {
-    harness.items.find({b: 1}, {projection: {a: 1, b: 0}})
+    harness.items.find({b: 1}, getProjectionOption({a: 1, b: 0}))
       .toArray(function(error) {
         expect(error).to.have.property('name', 'MongoError');
         expect(error)

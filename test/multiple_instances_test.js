@@ -33,10 +33,10 @@ describe('Multi-instance support', function() {
   });
 
   before(function(done) {
-    var connectionOne = mongoose.createConnection();
-    var connectionTwo = mongoose.createConnection();
-
-    var serverOptions = {server: {poolSize: 1}};
+    var serverOptions = {
+      server: {poolSize: 1},
+      useMongoClient: true
+    };
 
     serverOne.start(function(error) {
       if (error) return done(error);
