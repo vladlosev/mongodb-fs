@@ -55,7 +55,6 @@ describe('createIndex', function() {
   // We need this to verify the full output of the createIndexes command.
   // Mongoose only returns the index name.
   it('creates an index using raw command', function(done) {
-    var util = require('util');
     harness.dbClient.db('fakedb').command(
       {createIndexes: 'items', indexes: [{key: {a: 1}}]},
       function(error, results) {

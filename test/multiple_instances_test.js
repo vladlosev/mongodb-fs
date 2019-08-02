@@ -14,8 +14,6 @@ var logConfig = {
 /* eslint-disable no-unused-expressions */
 
 describe('Multi-instance support', function() {
-  var ModelOne;
-  var ModelTwo;
   var databaseOne = {
     collectionOne: [{_id: new mongodb.ObjectId(), key: 'value'}]
   };
@@ -38,11 +36,6 @@ describe('Multi-instance support', function() {
   var collectionTwo;
 
   before(function(done) {
-    var serverOptions = {
-      server: {poolSize: 1},
-      useMongoClient: true
-    };
-
     serverOne.start(function(error) {
       if (error) return done(error);
       serverTwo.start(function(error) {
@@ -52,7 +45,7 @@ describe('Multi-instance support', function() {
 
         mongodb.MongoClient.connect(
           'mongodb://localhost:27027/fakedbone',
-          function(err, client) {
+          function(error, client) {
             if (error) {
               return serverTwo.stop(function() {
                 serverOne.stop(function() { done(error) });
@@ -62,7 +55,7 @@ describe('Multi-instance support', function() {
             collectionOne = client.db('fakedbone').collection('collectionOne');
             mongodb.MongoClient.connect(
               'mongodb://localhost:27028/fakedbtwo',
-              function(err, client) {
+              function(error, client) {
                 if (error) {
                   return clientOne.close(function() {
                     serverTwo.stop(function() {
@@ -85,7 +78,7 @@ describe('Multi-instance support', function() {
         serverOne.stop(function() {
           serverTwo.stop(done);
         });
-      })
+      });
     });
   });
 
@@ -96,8 +89,8 @@ describe('Multi-instance support', function() {
       collectionTwo.insert(result, function(error) {
         if (error) return done(error);
         chai.expect(databaseTwo.collectionTwo).to.have.length(1);
-        chai.expect(databaseTwo.collectionTwo[0])
-          .to.have.property('key', 'value');
+        chai.expect(databaseTwo.collectionTwo[0]).
+          to.have.property('key', 'value');
         done();
       });
     });

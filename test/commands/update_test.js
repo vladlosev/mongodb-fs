@@ -13,7 +13,7 @@ describe('update', function() {
   var expect = chai.expect;
 
   var id1 = new mongodb.ObjectId();
-  var id2 = new mongodb.ObjectId(); 
+  var id2 = new mongodb.ObjectId();
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
 
@@ -115,8 +115,6 @@ describe('update', function() {
       {a: 'value1'},
       {'b.c': 42},
       function(error, res) {
-        var util = require('util');
-        console.log(util.format(res));
         expect(error).to.have.property('ok').to.be.not.ok;
         expect(error)
           .to.have.property('err')

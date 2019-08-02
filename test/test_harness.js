@@ -35,7 +35,7 @@ TestHarness.prototype.setUp = function setUp(done) {
 
     mongodb.MongoClient.connect(
       connectUrl,
-      function(err, client) {
+      function(error, client) {
         if (error) {
           return mongodbFs.stop(function() { done(error); });
         }
