@@ -17,7 +17,7 @@ function TestHarness(mocks, port, logLevel) {
   this.initialized = false;
 }
 
-TestHarness.prototype.setUp = function setUpWithMongoClient(done) {
+TestHarness.prototype.setUp = function setUp(done) {
   mongodbFs.init(this.config);
   if (this.initialized) {
     return process.nextTick(done);
@@ -45,7 +45,7 @@ TestHarness.prototype.setUp = function setUpWithMongoClient(done) {
   }.bind(this));
 };
 
-TestHarness.prototype.tearDown = function tearDownWithMongoClient(done) {
+TestHarness.prototype.tearDown = function tearDown(done) {
   this.initialized = false;
   this.logger.info('Disconnecting...');
   this.dbClient.close(function() {
