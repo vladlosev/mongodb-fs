@@ -35,16 +35,6 @@ describe('Multi-instance support', function() {
   before(function(done) {
     var connectionOne = mongoose.createConnection();
     var connectionTwo = mongoose.createConnection();
-    ModelOne = connectionOne.model(
-      'ModelOne',
-      new mongoose.Schema(
-        {any: mongoose.Schema.Types.Mixed},
-        {collection: 'collectionOne', cache: false}));
-    ModelTwo = connectionTwo.model(
-      'ModelTwo',
-      new mongoose.Schema(
-        {any: mongoose.Schema.Types.Mixed},
-        {collection: 'collectionTwo', cache: false}));
 
     var serverOptions = {server: {poolSize: 1}};
 
@@ -52,16 +42,27 @@ describe('Multi-instance support', function() {
       if (error) return done(error);
       serverTwo.start(function(error) {
         if (error) return done(error);
-        connectionOne.open(
+        mongoose.createConnection(
           'mongodb://localhost:27027/fakedbone',
-          serverOptions,
-          function(error) {
-            if (error) return done(error);
-            connectionTwo.open(
-              'mongodb://localhost:27028/fakedbtwo',
-              serverOptions,
-              done);
-        });
+          serverOptions)
+        .then(function(connectionOne) {
+          ModelOne = connectionOne.model(
+            'ModelOne',
+            new mongoose.Schema(
+              {any: mongoose.Schema.Types.Mixed},
+              {collection: 'collectionOne', cache: false}));
+        }).then(function() {
+          return mongoose.createConnection(
+            'mongodb://localhost:27028/fakedbtwo',
+            serverOptions)
+        }).then(function(connectionTwo) {
+          ModelTwo = connectionTwo.model(
+            'ModelTwo',
+            new mongoose.Schema(
+              {any: mongoose.Schema.Types.Mixed},
+              {collection: 'collectionTwo', cache: false}));
+        }).then(function() { done(); })
+        .catch(done)
       });
     });
   });

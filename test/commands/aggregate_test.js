@@ -18,33 +18,28 @@ describe('aggregate', function() {
 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
-  var Item;
 
   function assertAggregationResults(input, operation, results, done) {
     fakeDatabase.items = input;
 
-    Item.aggregate(
-      operation,
-      function(error, items) {
-        if (error) return done(error);
+    harness.items.aggregate(operation).toArray(function(error, items) {
+      if (error) return done(error);
 
-        expect(items).to.deep.equal(results);
-        done();
+      expect(items).to.deep.equal(results);
+      done();
     });
   }
 
   function assertAggregationError(input, operation, code, message, done) {
     fakeDatabase.items = input;
 
-    Item.aggregate(
-      operation,
-      function(error) {
-        expect(error).to.have.property('ok', false);
-        code && expect(error).to.have.property('code', code);
-        expect(error)
-          .to.have.property('message')
-          .to.equal(message);
-        done();
+    harness.items.aggregate(operation).toArray(function(error) {
+      expect(error).to.have.property('ok', false);
+      code && expect(error).to.have.property('code', code);
+      expect(error)
+        .to.have.property('message')
+        .to.equal(message);
+      done();
     });
   }
 
@@ -83,14 +78,15 @@ describe('aggregate', function() {
   }
 
   before(function(done) {
-    harness.setUp(function(error) {
-      Item = mongoose.connection.models.Item;
-      done(error);
+    harness.setUpWithMongoClient(function(error) {
+      if (error) return done(error);
+      harness.items = harness.dbClient.db('fakedb').collection('items');
+      done();
     });
   });
 
   after(function(done) {
-    harness.tearDown(done);
+    harness.tearDownWithMongoClient(done);
   });
 
   it('empty sequence returns all documents', function(done) {
@@ -99,7 +95,7 @@ describe('aggregate', function() {
       {_id: id2, key: 'b', value: 1},
       {_id: id3, key: 'b', value: 2}
     ];
-    Item.collection.aggregate([], function(error, items) {
+    harness.items.aggregate([]).toArray(function(error, items) {
       if (error) return done(error);
 
       expect(items).to.deep.equal(fakeDatabase.items);
@@ -208,46 +204,42 @@ describe('aggregate', function() {
     });
 
     it('rejects non-objects as pipeline stages', function(done) {
-      Item.collection.aggregate(
-        [1],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 15942);
-          expect(error)
-            .to.have.property('message')
-            .to.match(/exception: pipeline element 0 is not an object/);
-          done();
+      harness.items.aggregate([1]).toArray(function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 15942);
+        expect(error)
+          .to.have.property('message')
+          .to.match(/exception: pipeline element 0 is not an object/);
+        done();
       });
     });
 
     it('rejects multiple fields in pipeline stages', function(done) {
-      Item.collection.aggregate(
+      harness.items.aggregate(
         [{
           '$match': {a: 1, b: 1},
           '$group': {_id: '$a', total: {'$sum': '$b'}}
-        }],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 16435);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string(
-              'exception: A pipeline stage specification object ' +
-              'must contain exactly one field.');
-          done();
+        }]
+      ).toArray(function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 16435);
+        expect(error)
+          .to.have.property('message')
+          .to.have.string(
+            'exception: A pipeline stage specification object ' +
+            'must contain exactly one field.');
+        done();
       });
     });
 
     it('rejects unknown pipeline stage names', function(done) {
-      Item.collection.aggregate(
-        [{a: 1}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 16436);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string("exception: Unrecognized pipeline stage name: 'a'");
-          done();
+      harness.items.aggregate([{a: 1}]).toArray(function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 16436);
+        expect(error)
+          .to.have.property('message')
+          .to.have.string("exception: Unrecognized pipeline stage name: 'a'");
+        done();
       });
     });
 
