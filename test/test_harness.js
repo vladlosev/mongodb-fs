@@ -1,7 +1,7 @@
 'use strict';
 
 var log4js = require('log4js');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 var path = require('path');
 var util = require('util');
 
@@ -26,37 +26,29 @@ TestHarness.prototype.setUp = function setUp(done) {
   mongodbFs.start(function(error) {
     if (error) return done(error);
 
-    switch (this.config.log.level.toLowerCase()) {
-      case 'debug':  // fallthrough
-      case 'trace':
-        mongoose.set('debug', true);
-    }
     this.logger.info('Connecting...');
     var databaseName = Object.keys(this.config.mocks)[0];
     var connectUrl = util.format(
       'mongodb://localhost:%d/%s',
       this.config.port,
       databaseName);
-    var serverOptions = {server: {poolSize: 1}};
 
-    mongoose.connect(connectUrl, serverOptions, function(error) {
-      if (error) {
-        return mongodbFs.stop(function() { done(error); });
-      }
-      delete mongoose.connection.models.Item;
-      this.Item = mongoose.model(
-        'Item',
-        new mongoose.Schema({any: mongoose.Schema.Types.Mixed}));
-      this.initialized = true;
-      done();
-    }.bind(this));
+    mongodb.MongoClient.connect(
+      connectUrl,
+      function(error, client) {
+        if (error) {
+          return mongodbFs.stop(function() { done(error); });
+        }
+        this.dbClient = client;
+        done();
+      }.bind(this));
   }.bind(this));
 };
 
 TestHarness.prototype.tearDown = function tearDown(done) {
   this.initialized = false;
   this.logger.info('Disconnecting...');
-  mongoose.disconnect(function() {
+  this.dbClient.close(function() {
     this.logger.info('Stopping fake server...');
     mongodbFs.stop(done);
   }.bind(this));

@@ -49,6 +49,7 @@
     "gulp-eslint": "^0.15.0",
     "gulp-load-plugins": "^1.0.0-rc.1",
     "mocha": "^2.2.5",
-    "mongoose": "~4.5.10"
+    "mongodb": "~3.2.7",
+    "mongoose": "~4.13.19"
   }
 }

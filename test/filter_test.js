@@ -2,7 +2,7 @@
 
 var _ = require('lodash');
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 var path = require('path');
 var bson = require('bson');
 
@@ -1291,8 +1291,8 @@ describe('filterItems', function() {
     var id4Copy = new bson.ObjectID(id4.toString());
     var id5Copy = new bson.ObjectID(id5.toString());
 
-    var id1DifferentType = new mongoose.Types.ObjectId(id1.toHexString());
-    var id3DifferentType = new mongoose.Types.ObjectId(id3.toHexString());
+    var id1DifferentType = new mongodb.ObjectId(id1.toHexString());
+    var id3DifferentType = new mongodb.ObjectId(id3.toHexString());
 
     var items = [
       {_id: 1, id: id1, ids: [id3, id4]},

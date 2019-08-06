@@ -2,7 +2,7 @@
 
 var _ = require('lodash');
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 
 var TestHarness = require('../test_harness');
 
@@ -12,17 +12,16 @@ var TestHarness = require('../test_harness');
 describe('update', function() {
   var expect = chai.expect;
 
-  var id1 = new mongoose.Types.ObjectId();
-  var id2 = new mongoose.Types.ObjectId();
-
+  var id1 = new mongodb.ObjectId();
+  var id2 = new mongodb.ObjectId();
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
-  var Item;
 
   before(function(done) {
     harness.setUp(function(error) {
-      Item = mongoose.connection.models.Item;
-      done(error);
+      if (error) return done(error);
+      harness.items = harness.dbClient.db('fakedb').collection('items');
+      done();
     });
   });
 
@@ -32,7 +31,7 @@ describe('update', function() {
 
   it('updates all documents', function(done) {
     fakeDatabase.items = [{key: 'value1', _id: id1}, {key: 'value2', _id: id2}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {'$set': {key: 'new value'}},
       {multi: true},
@@ -51,7 +50,7 @@ describe('update', function() {
 
   it('updates documents by query', function(done) {
     fakeDatabase.items = [{key: 'value1', _id: id1}, {key: 'value2', _id: id2}];
-    Item.collection.update(
+    harness.items.update(
       {key: 'value2'},
       {'$set': {key: 'new value'}},
       function(error, result) {
@@ -69,7 +68,7 @@ describe('update', function() {
 
   it('updates nothing when query does not match', function(done) {
     fakeDatabase.items = [{key: 'value1', _id: id1}, {key: 'value2', _id: id2}];
-    Item.collection.update(
+    harness.items.update(
       {key: 'value3'},
       {'$set': {key: 'new value'}},
       function(error, result) {
@@ -86,7 +85,7 @@ describe('update', function() {
 
   it('replaces fields', function(done) {
     fakeDatabase.items = [{a: 'value', b: 1, c: 'there', _id: id1}];
-    Item.collection.update(
+    harness.items.update(
       {a: 'value'},
       {a: 'new value', '$inc': {b: 1}},
       function(error) {
@@ -99,7 +98,7 @@ describe('update', function() {
 
   it('replaces subfields', function(done) {
     fakeDatabase.items = [{a: 'value1', b: {c: 1}, _id: id1}];
-    Item.collection.update(
+    harness.items.update(
       {a: 'value1'},
       {'$set': {'b.c': 42}},
       function(error) {
@@ -112,7 +111,7 @@ describe('update', function() {
 
   it('rejects subfield literals', function(done) {
     fakeDatabase.items = [{a: 'value1', b: {c: 1}, _id: id1}];
-    Item.collection.update(
+    harness.items.update(
       {a: 'value1'},
       {'b.c': 42},
       function(error) {
@@ -126,7 +125,7 @@ describe('update', function() {
 
   it('replaces entire documents', function(done) {
     fakeDatabase.items = [{a: 'value1', b: 1, _id: id1}];
-    Item.collection.update({a: 'value1'}, {b: 42}, function(error) {
+    harness.items.update({a: 'value1'}, {b: 42}, function(error) {
       if (error) return done(error);
       // The subfield a.c should be gone as the update document does not
       // specify any operators.
@@ -138,7 +137,7 @@ describe('update', function() {
 
   it('does not create non-existent collection', function(done) {
     delete fakeDatabase.items;
-    Item.collection.update({a: 'value1'}, {b: 42}, function(error, result) {
+    harness.items.update({a: 'value1'}, {b: 42}, function(error, result) {
       if (error) return done(error);
 
       expect(result).to.have.deep.property('result.ok').to.be.ok;
@@ -152,7 +151,7 @@ describe('update', function() {
 
   it('$pushAll to array', function(done) {
     fakeDatabase.items = [{_id: id1, key: ['value1']}];
-    Item.collection.update(
+    harness.items.update(
       {_id: id1},
       {'$pushAll': {key: ['value2']}},
       function(error) {
@@ -167,7 +166,7 @@ describe('update', function() {
 
   it('$pushAll to non-existent field creates array', function(done) {
     fakeDatabase.items = [{_id: id1}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {'$pushAll': {key: ['a', 'b']}},
       function(error) {
@@ -182,7 +181,7 @@ describe('update', function() {
 
   it('$pushAll to non-array fails', function(done) {
     fakeDatabase.items = [{key: {a: 1}}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {'$pushAll': {'key': ['a']}},
       function(error) {
@@ -200,7 +199,7 @@ describe('update', function() {
 
   it('$pushAll with non-array argument fails', function(done) {
     fakeDatabase.items = [{key: ['value1', 'value2']}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {'$pushAll': {key: 'abc'}},
       function(error) {
@@ -220,7 +219,7 @@ describe('update', function() {
 
   it('set array value', function(done) {
     fakeDatabase.items = [{_id: id1, key: ['value1', 'value2']}];
-    Item.collection.update(
+    harness.items.update(
       {_id: id1},
       {'$set': {key: ['one', 'two']}},
       function(error, result) {
@@ -239,13 +238,13 @@ describe('update', function() {
     var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
     var now = new Date();
     fakeDatabase.items = [{_id: id1, date: tenSecondsAgo}];
-    Item.findOne({_id: id1}, function(error, item) {
+    harness.items.findOne({_id: id1}, function(error, item) {
       if (error) return done(error);
-      expect(item.toObject())
+      expect(item)
         .to.have.property('date')
         .to.be.instanceof(Date)
         .and.to.eql(tenSecondsAgo);
-      Item.collection.update({}, {'$set': {date: now}}, function(error) {
+      harness.items.update({}, {'$set': {date: now}}, function(error) {
         if (error) return done(error);
         expect(fakeDatabase.items).to.have.length(1);
         expect(fakeDatabase.items[0])
@@ -261,7 +260,7 @@ describe('update', function() {
     var tenSecondsAgo = new Date(Date.now() - 10 * 1000);
     var now = new Date();
     fakeDatabase.items = [{_id: id1, date: tenSecondsAgo}];
-    Item.collection.update({}, {$set: {date: [now]}}, function(error) {
+    harness.items.update({}, {$set: {date: [now]}}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase.items).to.have.length(1);
       expect(fakeDatabase.items[0])
@@ -276,7 +275,7 @@ describe('update', function() {
 
   it('$pull', function(done) {
     fakeDatabase.items = [{_id: id1, key: ['value1', 'value2']}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {$pull: {key: 'value1'}},
       function(error) {
@@ -290,9 +289,9 @@ describe('update', function() {
   });
 
   it('$pull ObjectIds', function(done) {
-    var idCopy = new mongoose.Types.ObjectId(id1.toString());
+    var idCopy = new mongodb.ObjectId(id1.toString());
     fakeDatabase.items = [{key: [id1]}];
-    Item.collection.update({}, {$pull: {key: idCopy}}, function(error) {
+    harness.items.update({}, {$pull: {key: idCopy}}, function(error) {
       if (error) return done(error);
       expect(fakeDatabase.items).to.have.length(1);
       expect(fakeDatabase.items[0])
@@ -307,7 +306,7 @@ describe('update', function() {
       key: ['a', 'b'],
       key2: ['c', 'd']
     }];
-    Item.collection.update(
+    harness.items.update(
       {},
       {$pull: {key: 'a', key2: 'd'}},
       function(error) {
@@ -325,7 +324,7 @@ describe('update', function() {
 
   it('$pull by query removes multiple values', function(done) {
     fakeDatabase.items = [{_id: id1, key: [1, 11, 2, 12, 3, 13, 4]}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {$pull: {key: {'$gt': 10}}},
       function(error) {
@@ -340,7 +339,7 @@ describe('update', function() {
 
   it('$pull by query removes repeated values', function(done) {
     fakeDatabase.items = [{_id: id1, key: [1, 13, 2, 13, 3, 13]}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {$pull: {key: {'$gt': 10}}},
       function(error) {
@@ -355,7 +354,7 @@ describe('update', function() {
 
   it('$pull by query works with subfields', function(done) {
     fakeDatabase.items = [{_id: id1, key: {a: [1, 2, 10, 20]}}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {$pull: {'key.a': {'$lt': 10}}},
       function(error) {
@@ -373,7 +372,7 @@ describe('update', function() {
       _id: id1,
       key: [{a: 1}, {a: 2}, {a: 10}, {a: 20}]
     }];
-    Item.collection.update(
+    harness.items.update(
       {},
       {$pull: {'key': {a: {'$lt': 10}}}},
       function(error) {
@@ -392,7 +391,7 @@ describe('update', function() {
         _id: id1,
         key: [{a: 5}, {a: 15}, {a: 25}]
       }];
-      Item.collection.update(
+      harness.items.update(
         {},
         {$pull: {key: {'$or': [{a: {'$lt': 10}}, {a: {'$gt': 20}}]}}},
         function(error) {
@@ -407,7 +406,7 @@ describe('update', function() {
 
   it('$pull from non-array fails', function(done) {
     fakeDatabase.items = [{key: ['value1', 'value2']}];
-    Item.collection.update(
+    harness.items.update(
       {},
       {$pull: {'key.1': 'a'}},
       function(error) {
@@ -425,7 +424,7 @@ describe('update', function() {
 
   it('with non-container in path fails', function(done) {
     fakeDatabase.items = [{key: 'value1'}];
-    Item.collection.update(
+    harness.items.update(
       {key: 'value1'},
       {$set: {'key.k2.k3': 5}},
       function(error) {
@@ -441,7 +440,7 @@ describe('update', function() {
 
   it('rejects invalid filters', function(done) {
     fakeDatabase.items = [{key: 'value1'}];
-    Item.collection.update(
+    harness.items.update(
       {'$eq': 2},
       {$set: {'value': 5}},
       function(error) {
@@ -456,7 +455,7 @@ describe('update', function() {
   describe('$unset', function() {
     it('deletes fields', function(done) {
       fakeDatabase.items = [{a: 'value1', b: 33, _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {b: 0}},
         function(error) {
@@ -470,7 +469,7 @@ describe('update', function() {
 
     it('deletes compound fields', function(done) {
       fakeDatabase.items = [{a: 'value1', b: {c: 1}, _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {b: 0}},
         function(error) {
@@ -487,7 +486,7 @@ describe('update', function() {
         a: 'value1',
         b: {c: 1, d: 2},
         _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {'b.c': 0}},
         function(error) {
@@ -501,7 +500,7 @@ describe('update', function() {
 
     it('deletes multiple fields', function(done) {
       fakeDatabase.items = [{a: 'value1', b: 33, _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {a: 'value ignored', b: 0}},
         function(error) {
@@ -515,7 +514,7 @@ describe('update', function() {
 
     it('ignores non-existing fields', function(done) {
       fakeDatabase.items = [{a: 'value1', b: 33, _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {c: 0}},
         function(error) {
@@ -533,7 +532,7 @@ describe('update', function() {
         b: {c: 1, d: {x: 2}},
         _id: id1
       }];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {'b.h': 0, 'b.d.y': 0}},
         function(error) {
@@ -547,7 +546,7 @@ describe('update', function() {
 
     it('ignores subfields of non-objects', function(done) {
       fakeDatabase.items = [{a: 'value1', _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {'a.f': 0}},
         function(error) {
@@ -565,7 +564,7 @@ describe('update', function() {
         b: [1, 2, 3],
         _id: id1
       }];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {'b.1': 0}},
         function(error) {
@@ -583,7 +582,7 @@ describe('update', function() {
         b: [1, 2, 3],
         _id: id1
       }];
-      Item.collection.update(
+      harness.items.update(
         {_id: id1},
         {'$unset': {'b.8': 0}},
         function(error) {
@@ -599,7 +598,7 @@ describe('update', function() {
   describe('upsert', function() {
     it('updates existing documents', function(done) {
       fakeDatabase.items = [{a: 'value', b: 1, _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value'},
         {'$set': {a: 'new value'}, '$inc': {b: 10}},
         {upsert: true},
@@ -613,7 +612,7 @@ describe('update', function() {
 
     it('inserts new document when no matches', function(done) {
       fakeDatabase.items = [{a: 'value1', b: 1, _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value2'},
         {b: 10},
         {upsert: true},
@@ -632,7 +631,7 @@ describe('update', function() {
 
     it('creates a collection if does not exist when inserting', function(done) {
       delete fakeDatabase.items;
-      Item.collection.update(
+      harness.items.update(
         {a: 'value2'},
         {b: 10},
         {upsert: true},
@@ -650,7 +649,7 @@ describe('update', function() {
     it('uses only update document values if update contains no operators',
       function(done) {
         fakeDatabase.items = [{a: 'value1', b: 1, _id: id1}];
-        Item.collection.update(
+        harness.items.update(
           {a: 'value2'},
           {b: 10, c: 'whatever'},
           {upsert: true},
@@ -671,7 +670,7 @@ describe('update', function() {
     it('uses update and find document values if update contains operators',
       function(done) {
         fakeDatabase.items = [{a: 'value1', b: 1, _id: id1}];
-        Item.collection.update(
+        harness.items.update(
           {a: 'value2', b: {'$gt': 5}},
           {'$set': {c: 10}, d: 'whatever'},
           {upsert: true},
@@ -694,7 +693,7 @@ describe('update', function() {
     it('pulls values from $and conjunctions if update contains operators',
       function(done) {
         fakeDatabase.items = [{a: 'value1', b: 1, _id: id1}];
-        Item.collection.update(
+        harness.items.update(
           {'$and': [
             {a: 'value2', b: 18},
             {'$and': [{c: 42}, {'d.e': 36}]},
@@ -724,7 +723,7 @@ describe('update', function() {
 
     it('does not unpack ObjectIDs when copying from query', function(done) {
       fakeDatabase.items = [{a: 'value1', _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value2', b: id2},
         {'$set': {c: 10}},
         {upsert: true},
@@ -745,7 +744,7 @@ describe('update', function() {
 
     it('$setOnInsert modifies inserted records', function(done) {
       fakeDatabase.items = [{a: 'value1', _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value2'},
         {'$setOnInsert': {c: 10}},
         {upsert: true},
@@ -764,7 +763,7 @@ describe('update', function() {
 
     it('$setOnInsert does not touch updated records', function(done) {
       fakeDatabase.items = [{a: 'value1', _id: id1}];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value1'},
         {'$setOnInsert': {c: 10}, '$set': {b: 5}},
         {upsert: true},
@@ -785,7 +784,7 @@ describe('update', function() {
         {a: 'value', b: 1, _id: id1},
         {a: 'value', b: 2, _id: id2}
       ];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value'},
         {'$set': {a: 'new value'}, '$inc': {b: 10}},
         function(error) {
@@ -804,7 +803,7 @@ describe('update', function() {
         {a: 'value', b: 1, _id: id1},
         {a: 'value', b: 2, _id: id2}
       ];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value'},
         {'$set': {a: 'new value'}, '$inc': {b: 10}},
         {multi: false},
@@ -824,7 +823,7 @@ describe('update', function() {
         {a: 'value', b: 1, _id: id1},
         {a: 'value', b: 2, _id: id2}
       ];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value'},
         {'$set': {a: 'new value'}, '$inc': {b: 10}},
         {multi: true},
@@ -844,7 +843,7 @@ describe('update', function() {
         {a: 'value', b: 1, _id: id1},
         {a: 'value', b: 2, _id: id2}
       ];
-      Item.collection.update(
+      harness.items.update(
         {a: 'value'},
         {a: 'new value', '$inc': {b: 10}},
         {multi: true},

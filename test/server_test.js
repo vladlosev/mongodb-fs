@@ -2,13 +2,11 @@
 
 var _ = require('lodash');
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 
 var TestHarness = require('./test_harness');
 
-var ObjectId = mongoose.Types.ObjectId;
-
-var Item;
+var ObjectId = mongodb.ObjectId;
 
 var fakeDatabase = {
   items: [
@@ -29,8 +27,7 @@ describe('Works in forked mode', function() {
     harness.config.fork = true;
     harness.setUp(function(error) {
       if (error) return done(error);
-      delete mongoose.connection.models.Item;
-      Item = mongoose.model('Item', {key: Number, compound: {subkey: Number}});
+      harness.items = harness.dbClient.db('fakedb').collection('items');
       done();
     });
   });
@@ -42,17 +39,17 @@ describe('Works in forked mode', function() {
   beforeEach(function(done) {
     // Restore the database to the original state to make tests
     // order-independent.
-    Item.remove({}, function(error) {
+    harness.items.remove({}, function(error) {
       if (error) return done(error);
       // Use copies of the original mock objects to avoid one test affecting
       // others by modifying objects in the database.
-      Item.collection.insert(fakeDatabase.items, done);
+      harness.items.insert(fakeDatabase.items, done);
     });
   });
 
   describe('find', function() {
     it('finds all documents', function(done) {
-      Item.find(function(error, items) {
+      harness.items.find().toArray(function(error, items) {
         if (error) return done(error);
         expect(_.pluck(items, 'key')).to.deep.equal([1, 2, 3]);
         done();
@@ -60,7 +57,7 @@ describe('Works in forked mode', function() {
     });
 
     it('finds documents by query', function(done) {
-      Item.find({key: {'$gt': 1}}, function(error, items) {
+      harness.items.find({key: {'$gt': 1}}).toArray(function(error, items) {
         if (error) return done(error);
         expect(_.pluck(items, 'key')).to.deep.equal([2, 3]);
         done();
@@ -68,30 +65,32 @@ describe('Works in forked mode', function() {
     });
   });
 
-  describe('findAndUpdate', function() {
+  describe('findAndModify', function() {
     it('basic', function(done) {
-      Item.findByIdAndUpdate(
+      harness.items.findAndModify(
         {_id: fakeDatabase.items[1]._id},
+        {},
         {'$set': {key: 18}},
         {'new': true},
         function(error, item) {
           if (error) return done(error);
-          expect(item).to.have.property('key', 18);
+          expect(item).to.have.property('value');
+          expect(item.value).to.have.property('key', 18);
           done();
       });
     });
   });
 
   describe('insert', function() {
-    it('saves document to collection', function(done) {
-      var item = new Item({key: 4});
-      item.save(function(error, savedItem) {
+    it('inserts document into collection', function(done) {
+      var item = {key: 4};
+      harness.items.insert(item, function(error, result) {
         if (error) return done(error);
-        expect(savedItem).to.exist;
-        Item.findById(savedItem._id, function(error, newItem) {
+        expect(result).to.have.deep.property('result.n', 1);
+        harness.items.findOne({_id: result.ops[0]._id}, function(error, newItem) {
         if (error) return done(error);
           expect(newItem).to.exist;
-          expect(newItem.toObject()).to.deep.equal(savedItem.toObject());
+          expect(newItem).to.deep.equal(result.ops[0]);
           done();
         });
       });
@@ -100,12 +99,12 @@ describe('Works in forked mode', function() {
 
   describe('remove', function() {
     it('removes document from collection', function(done) {
-      Item.findOne({'key': 2}, function(error, item) {
+      harness.items.findOne({'key': 2}, function(error, item) {
         if (error) return done(error);
         expect(item).to.exist;
-        item.remove(function(error) {
+        harness.items.remove(function(error) {
           if (error) return done(error);
-          Item.findById(item._id, function(error, noItem) {
+          harness.items.findOne({_id: item._id}, function(error, noItem) {
             if (error) return done(error);
             expect(noItem).to.not.exist;
             done();
@@ -117,16 +116,16 @@ describe('Works in forked mode', function() {
 
   describe('update', function() {
     it('updates documents', function(done) {
-      Item.findOne({key: 1}, function(error, item) {
+      harness.items.findOne({key: 1}, function(error, item) {
         if (error) return done(error);
         expect(item).to.exist;
         item.key = 42;
-        item.save(function(error) {
+        harness.items.update({_id: item._id}, item, function(error) {
           if (error) return done(error);
-          Item.findById(item._id, function(error, newItem) {
+          harness.items.findOne({_id: item._id}, function(error, newItem) {
             if (error) return done(error);
             expect(newItem).to.exist;
-            expect(newItem.toObject()).to.deep.equal(item.toObject());
+            expect(newItem).to.deep.equal(item);
             done();
           });
         });

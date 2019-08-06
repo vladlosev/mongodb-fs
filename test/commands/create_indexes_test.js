@@ -1,7 +1,6 @@
 'use strict';
 
 var chai = require('chai');
-var mongoose = require('mongoose');
 
 chai.use(require('chai-properties'));
 
@@ -10,12 +9,13 @@ var TestHarness = require('../test_harness');
 describe('createIndex', function() {
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
-  var Item;
 
   before(function(done) {
     harness.setUp(function(error) {
-      Item = mongoose.connection.models.Item;
-      done(error);
+      if (error) return done(error);
+      harness.db = harness.dbClient.db('fakedb');
+      harness.items = harness.db.collection('items');
+      done();
     });
   });
 
@@ -34,7 +34,7 @@ describe('createIndex', function() {
   });
 
   it('creates an index', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1},
       function(error, result) {
         if (error) return done(error);
@@ -55,7 +55,7 @@ describe('createIndex', function() {
   // We need this to verify the full output of the createIndexes command.
   // Mongoose only returns the index name.
   it('creates an index using raw command', function(done) {
-    mongoose.connection.db.command(
+    harness.dbClient.db('fakedb').command(
       {createIndexes: 'items', indexes: [{key: {a: 1}}]},
       function(error, results) {
         if (error) return done(error);
@@ -79,7 +79,7 @@ describe('createIndex', function() {
   });
 
   it('creates multiple indices using raw command', function(done) {
-    mongoose.connection.db.command(
+    harness.dbClient.db('fakedb').command(
       {createIndexes: 'items', indexes: [{key: {a: 1}}, {key: {b: 1}}]},
       function(error, results) {
         if (error) return done(error);
@@ -106,7 +106,7 @@ describe('createIndex', function() {
       name: 'a_1',
       ns: 'fakedb.items'
     });
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {b: 1},
       function(error, result) {
         if (error) return done(error);
@@ -127,7 +127,7 @@ describe('createIndex', function() {
       name: 'a_1',
       ns: 'fakedb.items'
     });
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1},
       function(error, result) {
         if (error) return done(error);
@@ -142,7 +142,7 @@ describe('createIndex', function() {
     delete fakeDatabase.items;
     fakeDatabase['system.indexes'] = [];
 
-    mongoose.connection.db.command(
+    harness.dbClient.db('fakedb').command(
       {createIndexes: 'items', indexes: [{key: {a: 1}}]},
       function(error, results) {
         if (error) return done(error);
@@ -170,7 +170,7 @@ describe('createIndex', function() {
   });
 
   it('creates a compound index', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1, b: -1},
       function(error, result) {
         if (error) return done(error);
@@ -189,7 +189,7 @@ describe('createIndex', function() {
   });
 
   it('creates index on embedded field', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1, 'b.c': -1},
       function(error, result) {
         if (error) return done(error);
@@ -206,7 +206,7 @@ describe('createIndex', function() {
   });
 
   it('creates a background index', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1},
       {background: true},
       function(error, result) {
@@ -224,7 +224,7 @@ describe('createIndex', function() {
   });
 
   it('creates a unique index', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1},
       {unique: true},
       function(error, result) {
@@ -242,7 +242,7 @@ describe('createIndex', function() {
   });
 
   it('creates a sparse index', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1},
       {sparse: true},
       function(error, result) {
@@ -260,7 +260,7 @@ describe('createIndex', function() {
   });
 
   it('creates a hashed index', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 'hashed'},
       function(error, result) {
         if (error) return done(error);
@@ -283,7 +283,7 @@ describe('createIndex', function() {
       name: 'a_1',
       ns: 'fakedb.items'
     });
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 'hashed'},
       function(error, result) {
         if (error) return done(error);
@@ -306,7 +306,7 @@ describe('createIndex', function() {
       name: 'a_hashed',
       ns: 'fakedb.items'
     });
-    mongoose.connection.db.command(
+    harness.dbClient.db('fakedb').command(
       {createIndexes: 'items', indexes: [{key: {a: 'hashed'}}]},
       function(error, results) {
         if (error) return done(error);
@@ -322,7 +322,7 @@ describe('createIndex', function() {
   });
 
   it('accepts custom index name', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1},
       {name: 'totally custom name'},
       function(error, result) {
@@ -345,7 +345,7 @@ describe('createIndex', function() {
       name: 'totally custom name',
       ns: 'fakedb.items'
     });
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1},
       {unique: true},
       function(error) {
@@ -367,7 +367,7 @@ describe('createIndex', function() {
       name: 'totally custom name',
       ns: 'fakedb.items'
     });
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {b: 1},
       {name: 'totally custom name'},
       function(error) {
@@ -386,7 +386,7 @@ describe('createIndex', function() {
   });
 
   it('rejects compound index with a hashed field', function(done) {
-    Item.collection.createIndex(
+    harness.items.createIndex(
       {a: 1, b: 'hashed'},
       function(error) {
         chai.expect(error)

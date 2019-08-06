@@ -1,7 +1,7 @@
 'use strict';
 
 var chai = require('chai');
-var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 var Promise = require('bluebird');
 
 var TestHarness = require('../test_harness');
@@ -12,39 +12,34 @@ var TestHarness = require('../test_harness');
 describe('aggregate', function() {
   var expect = chai.expect;
 
-  var id1 = new mongoose.Types.ObjectId();
-  var id2 = new mongoose.Types.ObjectId();
-  var id3 = new mongoose.Types.ObjectId();
+  var id1 = new mongodb.ObjectId();
+  var id2 = new mongodb.ObjectId();
+  var id3 = new mongodb.ObjectId();
 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
-  var Item;
 
   function assertAggregationResults(input, operation, results, done) {
     fakeDatabase.items = input;
 
-    Item.aggregate(
-      operation,
-      function(error, items) {
-        if (error) return done(error);
+    harness.items.aggregate(operation).toArray(function(error, items) {
+      if (error) return done(error);
 
-        expect(items).to.deep.equal(results);
-        done();
+      expect(items).to.deep.equal(results);
+      done();
     });
   }
 
   function assertAggregationError(input, operation, code, message, done) {
     fakeDatabase.items = input;
 
-    Item.aggregate(
-      operation,
-      function(error) {
-        expect(error).to.have.property('ok', false);
-        code && expect(error).to.have.property('code', code);
-        expect(error)
-          .to.have.property('message')
-          .to.equal(message);
-        done();
+    harness.items.aggregate(operation).toArray(function(error) {
+      expect(error).to.have.property('ok', false);
+      code && expect(error).to.have.property('code', code);
+      expect(error)
+        .to.have.property('message')
+        .to.equal(message);
+      done();
     });
   }
 
@@ -84,8 +79,9 @@ describe('aggregate', function() {
 
   before(function(done) {
     harness.setUp(function(error) {
-      Item = mongoose.connection.models.Item;
-      done(error);
+      if (error) return done(error);
+      harness.items = harness.dbClient.db('fakedb').collection('items');
+      done();
     });
   });
 
@@ -99,7 +95,7 @@ describe('aggregate', function() {
       {_id: id2, key: 'b', value: 1},
       {_id: id3, key: 'b', value: 2}
     ];
-    Item.collection.aggregate([], function(error, items) {
+    harness.items.aggregate([]).toArray(function(error, items) {
       if (error) return done(error);
 
       expect(items).to.deep.equal(fakeDatabase.items);
@@ -208,46 +204,42 @@ describe('aggregate', function() {
     });
 
     it('rejects non-objects as pipeline stages', function(done) {
-      Item.collection.aggregate(
-        [1],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 15942);
-          expect(error)
-            .to.have.property('message')
-            .to.match(/exception: pipeline element 0 is not an object/);
-          done();
+      harness.items.aggregate([1]).toArray(function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 15942);
+        expect(error)
+          .to.have.property('message')
+          .to.match(/exception: pipeline element 0 is not an object/);
+        done();
       });
     });
 
     it('rejects multiple fields in pipeline stages', function(done) {
-      Item.collection.aggregate(
+      harness.items.aggregate(
         [{
           '$match': {a: 1, b: 1},
           '$group': {_id: '$a', total: {'$sum': '$b'}}
-        }],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 16435);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string(
-              'exception: A pipeline stage specification object ' +
-              'must contain exactly one field.');
-          done();
+        }]
+      ).toArray(function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 16435);
+        expect(error)
+          .to.have.property('message')
+          .to.have.string(
+            'exception: A pipeline stage specification object ' +
+            'must contain exactly one field.');
+        done();
       });
     });
 
     it('rejects unknown pipeline stage names', function(done) {
-      Item.collection.aggregate(
-        [{a: 1}],
-        function(error) {
-          expect(error).to.have.property('ok', false);
-          expect(error).to.have.property('code', 16436);
-          expect(error)
-            .to.have.property('message')
-            .to.have.string("exception: Unrecognized pipeline stage name: 'a'");
-          done();
+      harness.items.aggregate([{a: 1}]).toArray(function(error) {
+        expect(error).to.have.property('ok', false);
+        expect(error).to.have.property('code', 16436);
+        expect(error)
+          .to.have.property('message')
+          .to.have.string("exception: Unrecognized pipeline stage name: 'a'");
+        done();
       });
     });
 
@@ -610,8 +602,8 @@ describe('aggregate', function() {
     });
 
     it('compares ObjectIds', function(done) {
-      var idCompare1 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
-      var idCompare2 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf2');
+      var idCompare1 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
+      var idCompare2 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf2');
 
       assertMaxResults(
         [
@@ -623,7 +615,7 @@ describe('aggregate', function() {
     });
 
     it('ranks ObjectIds higher than arrays', function(done) {
-      var id = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+      var id = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
 
       assertMaxResults(
         [
@@ -645,7 +637,7 @@ describe('aggregate', function() {
     });
 
     it('ranks Booleans higher than ObjectIds', function(done) {
-      var id = new mongoose.Types.ObjectId();
+      var id = new mongodb.ObjectId();
 
       assertMaxResults(
         [
@@ -1355,13 +1347,13 @@ describe('aggregate', function() {
     });
 
     it('compares ObjectIds', function() {
-      var idCompare1 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
-      var idCompare2 = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf2');
+      var idCompare1 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
+      var idCompare2 = new mongodb.ObjectId('5567d9a0f9932aef26f23bf2');
       return assertStrictComparisonResult('$lt', idCompare1, idCompare2, true);
     });
 
     it('ranks ObjectIds higher than arrays', function() {
-      var id = new mongoose.Types.ObjectId('5567d9a0f9932aef26f23bf1');
+      var id = new mongodb.ObjectId('5567d9a0f9932aef26f23bf1');
       return assertStrictComparisonResult('$lt', ['x'], id, true);
     });
 
@@ -1370,7 +1362,7 @@ describe('aggregate', function() {
     });
 
     it('ranks Booleans higher than ObjectIds', function() {
-      var id = new mongoose.Types.ObjectId();
+      var id = new mongodb.ObjectId();
       return assertStrictComparisonResult('$lt', id, false, true);
     });
 

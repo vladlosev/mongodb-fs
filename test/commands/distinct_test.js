@@ -1,7 +1,6 @@
 'use strict';
 
 var chai = require('chai');
-var mongoose = require('mongoose');
 
 var TestHarness = require('../test_harness');
 
@@ -10,12 +9,12 @@ describe('distinct', function() {
 
   var fakeDatabase = {};
   var harness = new TestHarness({fakedb: fakeDatabase});
-  var Item;
 
   before(function(done) {
     harness.setUp(function(error) {
-      Item = mongoose.connection.models.Item;
-      done(error);
+      if (error) return done(error);
+      harness.items = harness.dbClient.db('fakedb').collection('items');
+      done();
     });
   });
 
@@ -25,7 +24,7 @@ describe('distinct', function() {
 
   it('finds distinct field values', function(done) {
     fakeDatabase.items = [{key: 1}, {key: 2}, {key: 3}, {key2: 4}];
-    Item.collection.distinct('key', function(error, values) {
+    harness.items.distinct('key', function(error, values) {
       if (error) return done(error);
       expect(values).to.deep.equal([1, 2, 3]);
       done();
@@ -38,7 +37,7 @@ describe('distinct', function() {
       {a: {b: 'y'}},
       {a: {c: 'z'}}
     ];
-    Item.collection.distinct('a.b', function(error, values) {
+    harness.items.distinct('a.b', function(error, values) {
       if (error) return done(error);
       expect(values).to.deep.equal(['x', 'y']);
       done();
@@ -51,7 +50,7 @@ describe('distinct', function() {
       {a: {b: 'y'}},
       {a: ['x', 42]}
     ];
-    Item.collection.distinct('a', function(error, values) {
+    harness.items.distinct('a', function(error, values) {
       if (error) return done(error);
       expect(values).to.deep.equal([{b: 'x'}, {b: 'y'}, ['x', 42]]);
       done();
@@ -60,7 +59,7 @@ describe('distinct', function() {
 
   it('supports filtering', function(done) {
     fakeDatabase.items = [{key: 1}, {key: 2}, {key: 3}];
-    Item.collection.distinct(
+    harness.items.distinct(
       'key',
       {key: {'$gt': 1}},
       function(error, values) {
@@ -72,7 +71,7 @@ describe('distinct', function() {
 
   it('handles empty collection', function(done) {
     fakeDatabase.items = [];
-    Item.collection.distinct('key', function(error, values) {
+    harness.items.distinct('key', function(error, values) {
       if (error) return done(error);
       expect(values).to.deep.equal([]);
       done();
@@ -81,7 +80,7 @@ describe('distinct', function() {
 
   it('handles non-existent collection', function(done) {
     delete fakeDatabase.items;
-    Item.collection.distinct('key', function(error, values) {
+    harness.items.distinct('key', function(error, values) {
       if (error) return done(error);
       expect(values).to.deep.equal([]);
       done();
@@ -90,7 +89,7 @@ describe('distinct', function() {
 
   it('does not create non-existent collection', function(done) {
     delete fakeDatabase.items;
-    Item.collection.distinct('key', function(error) {
+    harness.items.distinct('key', function(error) {
       if (error) return done(error);
       expect(fakeDatabase).to.not.have.property('items');
       done();
@@ -99,7 +98,7 @@ describe('distinct', function() {
 
   it('returns empty array if field parameter is invalid', function(done) {
     fakeDatabase.items = [{key: 1}, {key: 2}, {key: 3}];
-    Item.collection.distinct(42, function(error, values) {
+    harness.items.distinct(42, function(error, values) {
       if (error) return done(error);
       expect(values).to.deep.equal([]);
       done();
@@ -108,7 +107,7 @@ describe('distinct', function() {
 
   it('ignores invalid query parameter', function(done) {
     fakeDatabase.items = [{key: 1}, {key: 2}, {key: 3}];
-    Item.collection.distinct('key', 3, function(error, values) {
+    harness.items.distinct('key', 3, function(error, values) {
       if (error) return done(error);
       expect(values).to.deep.equal([1, 2, 3]);
       done();
